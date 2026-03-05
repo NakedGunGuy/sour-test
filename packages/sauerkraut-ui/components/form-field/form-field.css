@@ -1,0 +1,64 @@
+@layer components {
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .form-label {
+        font-size: var(--text-sm);
+        font-weight: 500;
+        color: var(--text-0);
+    }
+
+    .form-required {
+        color: var(--danger);
+    }
+
+    .form-input {
+        padding: var(--space-sm) var(--space-sm);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-0);
+        color: var(--text-0);
+        font-family: var(--font-sans);
+        font-size: var(--text-sm);
+        transition: border-color var(--duration) var(--ease-out);
+
+        &:focus {
+            outline: none;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--primary-soft);
+        }
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 4rem;
+    }
+
+    .form-checkbox {
+        width: 1.125rem;
+        height: 1.125rem;
+        accent-color: var(--primary);
+    }
+
+    .form-image-preview {
+        img {
+            max-width: 200px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+        }
+    }
+
+    .form-error {
+        font-size: var(--text-sm);
+        color: var(--danger);
+    }
+
+    .has-error .form-input {
+        border-color: var(--danger);
+    }
+}

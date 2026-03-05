@@ -1,0 +1,13 @@
+{
+    "name": "sauerkraut/ui",
+    "description": "Preset UI components for the Sauerkraut framework",
+    "type": "library",
+    "require": {
+        "php": ">=8.3"
+    },
+    "extra": {
+        "sauerkraut": {
+            "components-path": "components"
+        }
+    }
+}

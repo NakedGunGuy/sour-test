@@ -1,0 +1,90 @@
+@layer tokens {
+    :root {
+        /* Default: light. Toggle via data-theme attribute */
+        color-scheme: light;
+    }
+
+    /* Manual overrides — set data-theme on <html> to force a mode */
+    [data-theme="light"] { color-scheme: light; }
+    [data-theme="dark"]  { color-scheme: dark; }
+
+    :root {
+
+        /* --- Palette (HSL) --- */
+        --hue-primary: 220;
+        --hue-danger: 0;
+        --hue-success: 145;
+        --hue-warning: 35;
+
+        /* --- Surface & Text --- */
+        --surface-0: light-dark(hsl(0 0% 100%), hsl(0 0% 8%));
+        --surface-1: light-dark(hsl(0 0% 97%), hsl(0 0% 12%));
+        --surface-2: light-dark(hsl(0 0% 93%), hsl(0 0% 16%));
+
+        --text-0: light-dark(hsl(0 0% 10%), hsl(0 0% 92%));
+        --text-1: light-dark(hsl(0 0% 30%), hsl(0 0% 70%));
+        --text-2: light-dark(hsl(0 0% 50%), hsl(0 0% 50%));
+
+        /* --- Brand colors --- */
+        --primary: light-dark(hsl(220 70% 45%), hsl(220 70% 65%));
+        --primary-soft: light-dark(hsl(220 70% 95%), hsl(220 30% 20%));
+        --primary-text: light-dark(hsl(220 70% 30%), hsl(220 70% 80%));
+
+        --danger: light-dark(hsl(0 70% 50%), hsl(0 70% 65%));
+        --success: light-dark(hsl(145 60% 40%), hsl(145 60% 65%));
+        --warning: light-dark(hsl(35 90% 50%), hsl(35 80% 65%));
+
+        /* --- Borders --- */
+        --border: light-dark(hsl(0 0% 85%), hsl(0 0% 22%));
+        --border-focus: var(--primary);
+
+        /* --- Shadows --- */
+        --shadow-sm: light-dark(0 1px 2px hsl(0 0% 0% / 0.06), 0 1px 2px hsl(0 0% 0% / 0.3));
+        --shadow-md: light-dark(0 4px 12px hsl(0 0% 0% / 0.08), 0 4px 12px hsl(0 0% 0% / 0.4));
+
+        /* --- Spacing --- */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2.5rem;
+
+        /* --- Radius --- */
+        --radius-sm: 0.25rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-full: 9999px;
+
+        /* --- Typography --- */
+        --font-sans: system-ui, -apple-system, sans-serif;
+        --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+
+        --text-sm: 0.875rem;
+        --text-base: 1rem;
+        --text-lg: 1.125rem;
+        --text-xl: 1.25rem;
+        --text-2xl: 1.5rem;
+        --text-3xl: 2rem;
+
+        /* --- Transitions --- */
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --duration: 0.15s;
+    }
+}
+
+@layer base {
+    body {
+        font-family: var(--font-sans);
+        background: var(--surface-0);
+        color: var(--text-0);
+    }
+
+    a {
+        color: var(--primary);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

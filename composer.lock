@@ -1,0 +1,45 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8878d548cea2187a9a4a76b22c70719c",
+    "packages": [
+        {
+            "name": "sauerkraut/ui",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "./packages/sauerkraut-ui",
+                "reference": "c16c021536a2050bc92989e78e89c17fbdc24534"
+            },
+            "require": {
+                "php": ">=8.3"
+            },
+            "type": "library",
+            "extra": {
+                "sauerkraut": {
+                    "components-path": "components"
+                }
+            },
+            "description": "Preset UI components for the Sauerkraut framework",
+            "transport-options": {
+                "relative": true
+            }
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "sauerkraut/ui": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.3"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}

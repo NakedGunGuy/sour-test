@@ -1,0 +1,53 @@
+@layer components {
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: var(--surface-1);
+        color: var(--text-0);
+        font-size: var(--text-sm);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all var(--duration) var(--ease-out);
+
+        &:hover {
+            background: var(--surface-2);
+            box-shadow: var(--shadow-sm);
+        }
+
+        &:active {
+            scale: 0.97;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--border-focus);
+            outline-offset: 2px;
+        }
+
+        &.btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+
+            &:hover { opacity: 0.9; }
+        }
+
+        &.btn-danger {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: white;
+
+            &:hover { opacity: 0.9; }
+        }
+
+        &.btn-ghost {
+            background: transparent;
+            border-color: transparent;
+
+            &:hover { background: var(--surface-1); }
+        }
+    }
+}

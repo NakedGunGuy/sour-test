@@ -1,0 +1,145 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+$app = \Sauerkraut\App::boot(__DIR__);
+
+$command = $argv[1] ?? 'help';
+$args = array_slice($argv, 2);
+
+match ($command) {
+    'ui:publish' => uiPublish($args),
+    'help' => help(),
+    default => println("Unknown command: {$command}. Run 'php sauerkraut help' for available commands."),
+};
+
+function uiPublish(array $args): void
+{
+    $installed = basePath() . '/vendor/composer/installed.json';
+    if (!file_exists($installed)) {
+        println('Vendor directory not found. Run composer install first.');
+        return;
+    }
+
+    $data = json_decode(file_get_contents($installed), true);
+    $packages = $data['packages'] ?? $data;
+
+    $sourcePath = null;
+    foreach ($packages as $package) {
+        if ($package['name'] === 'sauerkraut/ui') {
+            $componentsDir = $package['extra']['sauerkraut']['components-path'] ?? 'components';
+            $sourcePath = basePath() . '/vendor/sauerkraut/ui/' . $componentsDir;
+            break;
+        }
+    }
+
+    if (!$sourcePath || !is_dir($sourcePath)) {
+        println('sauerkraut/ui package not found. Run: composer require sauerkraut/ui');
+        return;
+    }
+
+    $force = in_array('--force', $args);
+    $all = in_array('--all', $args);
+    $name = null;
+    foreach ($args as $arg) {
+        if (!str_starts_with($arg, '-')) {
+            $name = $arg;
+            break;
+        }
+    }
+
+    if (!$all && !$name) {
+        println('Usage: php sauerkraut ui:publish <component>');
+        println('       php sauerkraut ui:publish --all');
+        println('');
+        println('Options:');
+        println('  --force    Overwrite existing components');
+        println('  --all      Publish all components');
+        println('');
+        $available = array_map('basename', glob("{$sourcePath}/*", GLOB_ONLYDIR));
+        println('Available: ' . implode(', ', $available));
+        return;
+    }
+
+    if ($all) {
+        $dirs = glob("{$sourcePath}/*", GLOB_ONLYDIR);
+        foreach ($dirs as $dir) {
+            uiPublishOne(basename($dir), $sourcePath, $force);
+        }
+        return;
+    }
+
+    uiPublishOne($name, $sourcePath, $force);
+}
+
+function uiPublishOne(string $name, string $sourcePath, bool $force): void
+{
+    $source = "{$sourcePath}/{$name}";
+    if (!is_dir($source)) {
+        println("Component '{$name}' not found in sauerkraut/ui.");
+        return;
+    }
+
+    $dest = basePath() . "/components/{$name}";
+    if (is_dir($dest) && !$force) {
+        println("  Skipped: {$name} (already exists, use --force to overwrite)");
+        return;
+    }
+
+    if (is_dir($dest)) {
+        // Remove existing before overwrite
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($dest, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($files as $file) {
+            $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+        }
+        rmdir($dest);
+    }
+
+    mkdir($dest, 0755, true);
+
+    $sourceFiles = new \RecursiveIteratorIterator(
+        new \RecursiveDirectoryIterator($source, \FilesystemIterator::SKIP_DOTS),
+    );
+    foreach ($sourceFiles as $file) {
+        $relative = substr($file->getPathname(), strlen($source));
+        $relative = ltrim(str_replace('\\', '/', $relative), '/');
+        $targetPath = "{$dest}/{$relative}";
+        $targetDir = dirname($targetPath);
+        if (!is_dir($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+        copy($file->getPathname(), $targetPath);
+    }
+
+    println("  Published: {$name}");
+}
+
+function help(): void
+{
+    println('');
+    println('Sauerkraut CLI');
+    println('==============');
+    println('');
+    println('Usage: php sauerkraut <command> [arguments]');
+    println('');
+    println('Available commands:');
+    println('  ui:publish           Publish vendor UI components to your project');
+    println('  help                 Show this help message');
+    println('');
+}
+
+function basePath(): string
+{
+    return \Sauerkraut\App::getInstance()->basePath();
+}
+
+function println(string $text = ''): void
+{
+    echo $text . PHP_EOL;
+}

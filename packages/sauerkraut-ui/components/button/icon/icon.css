@@ -1,0 +1,11 @@
+@layer components {
+    .btn.btn-icon {
+        gap: var(--space-xs);
+
+        .btn-icon-symbol {
+            display: inline-flex;
+            font-size: 1.1em;
+            line-height: 1;
+        }
+    }
+}

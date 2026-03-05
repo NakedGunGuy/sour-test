@@ -1,0 +1,21 @@
+{
+    "name": "sauerkraut/app",
+    "description": "Sauerkraut framework application",
+    "type": "project",
+    "require": {
+        "php": ">=8.3",
+        "sauerkraut/ui": "@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sauerkraut\\": "framework/",
+            "App\\": "app/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "./packages/sauerkraut-ui"
+        }
+    ]
+}

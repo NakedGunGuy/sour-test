@@ -1,0 +1,39 @@
+@layer components {
+    .alert {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        border-radius: var(--radius-md);
+        font-size: var(--text-sm);
+        font-weight: 500;
+        border: 1px solid transparent;
+        transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .alert-dismiss {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: var(--text-lg);
+        cursor: pointer;
+        opacity: 0.6;
+        line-height: 1;
+        padding: 0;
+
+        &:hover { opacity: 1; }
+    }
+
+    .alert-success {
+        background: light-dark(hsl(145 60% 94%), hsl(145 30% 14%));
+        color: var(--success);
+        border-color: light-dark(hsl(145 40% 80%), hsl(145 30% 22%));
+    }
+
+    .alert-error {
+        background: light-dark(hsl(0 70% 95%), hsl(0 30% 14%));
+        color: var(--danger);
+        border-color: light-dark(hsl(0 50% 85%), hsl(0 30% 22%));
+    }
+}
