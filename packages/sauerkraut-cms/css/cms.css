@@ -1,0 +1,120 @@
+.cms-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+}
+
+.cms-sidebar {
+    background: var(--surface-1);
+    border-right: 1px solid var(--border);
+    padding: var(--space-md);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+.cms-sidebar-brand {
+    font-weight: 700;
+    font-size: var(--text-lg);
+    color: var(--text-0);
+    text-decoration: none;
+    display: block;
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--border);
+}
+
+.cms-sidebar-brand:hover { color: var(--primary); }
+
+.cms-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.cms-nav-link {
+    display: block;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    color: var(--text-1);
+    text-decoration: none;
+    font-size: var(--text-sm);
+}
+
+.cms-nav-link:hover { background: var(--surface-2); color: var(--text-0); }
+.cms-nav-link.active { background: var(--primary); color: white; }
+
+.cms-main {
+    padding: var(--space-xl);
+    max-width: 1200px;
+}
+
+.cms-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-lg);
+}
+
+.cms-header h1 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+}
+
+.cms-pagination {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-top: var(--space-lg);
+    font-size: var(--text-sm);
+}
+
+.cms-pagination a {
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--text-1);
+}
+
+.cms-pagination a:hover { background: var(--surface-2); }
+
+.cms-pagination .current {
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--primary);
+    color: white;
+    border-radius: var(--radius-sm);
+}
+
+.cms-related {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+}
+
+.cms-related h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.cms-related-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cms-related-list li {
+    padding: var(--space-xs) 0;
+}
+
+.cms-related-list a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.cms-related-list a:hover { text-decoration: underline; }

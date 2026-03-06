@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Sauerkraut;
 
 use Sauerkraut\Config\Config;
+use Sauerkraut\Database\Connection;
+use Sauerkraut\Database\Schema\Inspector;
 use Sauerkraut\View\Component;
 use Sauerkraut\View\View;
 
@@ -15,6 +17,9 @@ class App
     private array $bindings = [];
     private array $instances = [];
     private string $basePath;
+
+    /** @var array<string, array> Discovered package configs keyed by package name */
+    private array $packages = [];
 
     public function __construct(string $basePath)
     {
@@ -32,6 +37,8 @@ class App
         $app = new static($basePath);
         $app->registerAutoloader();
         $app->bootstrapConfig();
+        $app->bootstrapDatabase();
+        $app->discoverPackages();
         $app->bootstrapView();
         return $app;
     }
@@ -46,51 +53,153 @@ class App
         $this->singleton(Config::class, fn () => new Config($this->basePath . '/config'));
     }
 
-    private function bootstrapView(): void
+    private function bootstrapDatabase(): void
     {
-        View::setBasePath($this->basePath);
-
-        // 1. Vendor packages with sauerkraut components
-        foreach ($this->vendorComponentPaths() as $dir) {
-            if (is_dir($dir)) {
-                $this->registerComponents($dir, '', 'front');
+        $this->singleton(Connection::class, function () {
+            $default = $this->config('database.default', 'sqlite');
+            $config = $this->config("database.connections.{$default}");
+            if (!$config) {
+                throw new \RuntimeException("Database connection [{$default}] not configured.");
             }
-        }
+            return Connection::fromConfig($config);
+        });
 
-        // 2. Project components — override vendor
-        $componentsDir = $this->basePath . '/components';
-        if (is_dir($componentsDir)) {
-            $this->registerComponents($componentsDir, '', 'front');
-        }
+        $this->singleton(Inspector::class, function () {
+            return new Inspector($this->db());
+        });
     }
 
-    private function vendorComponentPaths(): array
+    private function discoverPackages(): void
     {
         $installed = $this->basePath . '/vendor/composer/installed.json';
         if (!file_exists($installed)) {
-            return [];
+            return;
         }
 
         $data = json_decode(file_get_contents($installed), true);
         $packages = $data['packages'] ?? $data;
 
-        $paths = [];
+        $config = $this->make(Config::class);
+
         foreach ($packages as $package) {
-            $componentsPath = $package['extra']['sauerkraut']['components-path'] ?? null;
+            $sauerkraut = $package['extra']['sauerkraut'] ?? null;
+            if (!$sauerkraut) {
+                continue;
+            }
+
+            $installPath = $this->basePath . '/vendor/' . $package['name'];
+            $this->packages[$package['name']] = array_merge($sauerkraut, [
+                'install_path' => $installPath,
+            ]);
+
+            // Load package config as defaults
+            $configPath = $sauerkraut['config'] ?? null;
+            if ($configPath) {
+                $config->loadPackageConfig($installPath . '/' . $configPath);
+            }
+        }
+    }
+
+    private function bootstrapView(): void
+    {
+        View::setBasePath($this->basePath);
+
+        foreach ($this->packages as $name => $pkg) {
+            $installPath = $pkg['install_path'];
+
+            // Register components
+            $componentsPath = $pkg['components-path'] ?? null;
             if ($componentsPath) {
-                $installPath = $this->basePath . '/vendor/' . $package['name'];
-                $paths[] = $installPath . '/' . $componentsPath;
+                $dir = $installPath . '/' . $componentsPath;
+                $prefix = $pkg['components-prefix'] ?? '';
+                $group = $pkg['components-group'] ?? 'frontend';
+                if (is_dir($dir)) {
+                    $this->registerComponents($dir, $prefix, $group);
+                }
+
+            }
+
+            // Register pages directory as vendor fallback
+            $pagesPath = $pkg['pages-path'] ?? null;
+            if ($pagesPath) {
+                $dir = $installPath . '/' . $pagesPath;
+                $app = $this->appNameFromPackage($pkg);
+                if ($app && is_dir($dir)) {
+                    View::registerPagesDir($app, $dir);
+                }
+            }
+
+            // Register CSS path
+            $cssPath = $pkg['css'] ?? null;
+            if ($cssPath) {
+                $app = $this->appNameFromPackage($pkg);
+                if ($app) {
+                    View::registerCssFile($app, $installPath . '/' . $cssPath);
+                }
             }
         }
 
-        return $paths;
+        // Project components — override vendor
+        $componentsDir = $this->basePath . '/frontend/components';
+        if (is_dir($componentsDir)) {
+            $this->registerComponents($componentsDir, '', 'frontend');
+        }
+
+        // Project-level overrides for package apps (e.g. cms/components/ overrides vendor CMS components)
+        foreach ($this->packages as $name => $pkg) {
+            $app = $this->appNameFromPackage($pkg);
+            if (!$app) {
+                continue;
+            }
+
+            $prefix = $pkg['components-prefix'] ?? '';
+            $group = $pkg['components-group'] ?? 'frontend';
+
+            $overrideDir = $this->basePath . '/' . $app . '/components';
+            if (is_dir($overrideDir)) {
+                $this->registerComponents($overrideDir, $prefix, $group);
+            }
+
+            // Project-level pages override vendor pages
+            $overridePagesDir = $this->basePath . '/' . $app . '/pages';
+            if (is_dir($overridePagesDir)) {
+                View::registerPagesDir($app, $overridePagesDir);
+            }
+
+            // Project-level CSS override
+            if (isset($pkg['css'])) {
+                $overrideCss = $this->basePath . '/' . $app . '/' . basename($pkg['css']);
+                if (file_exists($overrideCss)) {
+                    View::registerCssFile($app, $overrideCss);
+                }
+            }
+        }
+    }
+
+    /**
+     * Derive the app name from a package config.
+     * e.g. components-prefix "cms:" → app name "cms"
+     */
+    private function appNameFromPackage(array $pkg): ?string
+    {
+        $prefix = $pkg['components-prefix'] ?? '';
+        if ($prefix) {
+            return rtrim($prefix, ':');
+        }
+        return null;
     }
 
     private function registerComponents(string $dir, string $prefix, string $group): void
     {
         foreach (glob("{$dir}/*", GLOB_ONLYDIR) as $subdir) {
             $name = basename($subdir);
-            $fullName = $prefix ? "{$prefix}/{$name}" : $name;
+
+            if ($prefix && !str_contains($prefix, '/')) {
+                // Namespace prefix like "cms:" — no slash between prefix and name
+                $fullName = $prefix . $name;
+            } else {
+                $fullName = $prefix ? "{$prefix}/{$name}" : $name;
+            }
 
             if (file_exists("{$subdir}/{$name}.php")) {
                 Component::register($fullName, $subdir, $group);
@@ -133,9 +242,20 @@ class App
         return $this->make(Router::class);
     }
 
+    public function db(): Connection
+    {
+        return $this->make(Connection::class);
+    }
+
     public function basePath(string $path = ''): string
     {
         return $this->basePath . ($path ? '/' . ltrim($path, '/') : '');
+    }
+
+    /** @return array<string, array> */
+    public function packages(): array
+    {
+        return $this->packages;
     }
 
     // --- HTTP Lifecycle ---
@@ -163,6 +283,8 @@ class App
 
             [$route, $params] = $matched;
             $request->setRouteParams($params);
+
+            View::setCurrentApp($route->app());
 
             $middlewareClasses = $route->middleware();
             $handler = $route->handler();
@@ -223,11 +345,36 @@ class App
 
     private function loadRoutes(Router $router): void
     {
+        // Project routes
         $webRoutes = $this->basePath . '/routes/web.php';
-
         if (file_exists($webRoutes)) {
             $router->group([], function (Router $router) use ($webRoutes) {
                 require $webRoutes;
+            });
+        }
+
+        // Package routes
+        foreach ($this->packages as $name => $pkg) {
+            $routeFile = $pkg['routes'] ?? null;
+            if (!$routeFile) {
+                continue;
+            }
+
+            $routePath = $pkg['install_path'] . '/' . $routeFile;
+
+            // Project-level override
+            $overridePath = $this->basePath . '/routes/' . basename($routeFile);
+            if (file_exists($overridePath)) {
+                $routePath = $overridePath;
+            }
+
+            if (!file_exists($routePath)) {
+                continue;
+            }
+
+            $app = $this->appNameFromPackage($pkg) ?? '';
+            $router->group(['prefix' => $app, 'app' => $app ?: 'frontend'], function (Router $router) use ($routePath) {
+                require $routePath;
             });
         }
     }

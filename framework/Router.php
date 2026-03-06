@@ -66,7 +66,8 @@ class Router
         $name = $this->pendingName ?: null;
         $middleware = array_merge($groupMiddleware, $this->pendingMiddleware);
 
-        $route = new Route($method, $fullPattern, $handler, $middleware, $name);
+        $app = $this->currentApp();
+        $route = new Route($method, $fullPattern, $handler, $middleware, $name, $app);
         $this->routes[] = $route;
 
         if ($name) {
@@ -107,6 +108,16 @@ class Router
             }
         }
         return $middleware;
+    }
+
+    private function currentApp(): string
+    {
+        for ($i = count($this->groupStack) - 1; $i >= 0; $i--) {
+            if (isset($this->groupStack[$i]['app'])) {
+                return $this->groupStack[$i]['app'];
+            }
+        }
+        return 'frontend';
     }
 
     public function match(string $method, string $path): ?array

@@ -25,7 +25,24 @@ function e(string $value): string
 
 function config(string $key, mixed $default = null): mixed
 {
-    return App::getInstance()->config($key, $default);
+    $app = App::getInstance();
+
+    // If the key already targets a specific config file (e.g. "app.debug", "cms.tables"),
+    // resolve it directly — no fallback chain.
+    if (str_contains($key, '.')) {
+        return $app->config($key, $default);
+    }
+
+    // Short key (e.g. "assets", "theme") — check current app config first, then app.* default.
+    $currentApp = \Sauerkraut\View\View::currentApp();
+    if ($currentApp) {
+        $appValue = $app->config("{$currentApp}.{$key}");
+        if ($appValue !== null) {
+            return $appValue;
+        }
+    }
+
+    return $app->config("app.{$key}", $default);
 }
 
 function route(string $name, array $params = []): string
@@ -45,10 +62,32 @@ function csrf_token(): string
 
 function csrf_field(): string
 {
-    return '<input type="hidden" name="_token" value="' . csrf_token() . '">';
+    return '<input type="hidden" name="_token" value="' . e(csrf_token()) . '">';
 }
 
 function method_field(string $method): string
 {
     return '<input type="hidden" name="_method" value="' . e(strtoupper($method)) . '">';
+}
+
+function db(): \Sauerkraut\Database\Connection
+{
+    return App::getInstance()->db();
+}
+
+function theme_css(string $file): string
+{
+    $theme = config('theme', 'theme');
+    $path = App::getInstance()->basePath($theme . '/' . $file);
+
+    if (!file_exists($path)) {
+        return '';
+    }
+
+    return file_get_contents($path);
+}
+
+function cms_css(): string
+{
+    return \Sauerkraut\View\View::appCss('cms');
 }

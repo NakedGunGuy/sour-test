@@ -1,0 +1,32 @@
+@layer components {
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--text-sm);
+        font-variant-numeric: tabular-nums;
+
+        th, td {
+            padding: var(--space-sm) var(--space-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-1);
+            background: var(--surface-1);
+        }
+
+        td {
+            color: var(--text-0);
+        }
+
+        tbody tr {
+            transition: background var(--duration) var(--ease-out);
+
+            &:hover {
+                background: var(--surface-1);
+            }
+        }
+    }
+}

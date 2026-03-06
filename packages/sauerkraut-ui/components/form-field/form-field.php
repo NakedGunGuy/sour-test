@@ -1,5 +1,5 @@
 <?php
-/** @var \Citrus\CMS\Field $field */
+/** @var \Sauerkraut\CMS\Field $field */
 $value = $value ?? $field->default ?? '';
 $error = $error ?? '';
 $id = 'field-' . $field->name;
@@ -45,8 +45,15 @@ $hasError = !empty($error);
                 <?= $field->required ? 'required' : '' ?>
             >
                 <option value="">— Select —</option>
-                <?php foreach ($field->options as $opt): ?>
-                    <option value="<?= e($opt) ?>"<?= $value === $opt ? ' selected' : '' ?>><?= e(ucfirst($opt)) ?></option>
+                <?php foreach ($field->options as $opt):
+                    if (str_contains($opt, ':')) {
+                        [$optValue, $optLabel] = explode(':', $opt, 2);
+                    } else {
+                        $optValue = $opt;
+                        $optLabel = ucfirst($opt);
+                    }
+                ?>
+                    <option value="<?= e($optValue) ?>"<?= (string) $value === $optValue ? ' selected' : '' ?>><?= e($optLabel) ?></option>
                 <?php endforeach; ?>
             </select>
             <?php break; ?>

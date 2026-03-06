@@ -54,6 +54,32 @@
 
         </div>
 
+        <h2 style="font-size: var(--text-xl); font-weight: 600; margin-top: var(--space-lg);">Table</h2>
+
+        <?php
+        $users = [
+            (object) ['id' => 1, 'name' => 'Alice Park', 'role' => 'Engineer'],
+            (object) ['id' => 2, 'name' => 'Bob Chen', 'role' => 'Designer'],
+            (object) ['id' => 3, 'name' => 'Carol Singh', 'role' => 'PM'],
+            (object) ['id' => 4, 'name' => 'Dan Novak', 'role' => 'Engineer'],
+        ];
+        ?>
+
+        <?php open('table', ['id' => 'users']) ?>
+            <?php open('table/head') ?>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            <?php close() ?>
+            <tbody>
+                <?php foreach ($users as $u): ?>
+                    <?= \Sauerkraut\View\View::partial('partials/htmx-row', ['id' => $u->id, 'name' => $u->name, 'role' => $u->role]) ?>
+                <?php endforeach; ?>
+            </tbody>
+        <?php close() ?>
+
         <h2 style="font-size: var(--text-xl); font-weight: 600; margin-top: var(--space-lg);">Alerts</h2>
 
         <div id="htmx-alert-target"></div>

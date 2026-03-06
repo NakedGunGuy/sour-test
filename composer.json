@@ -4,7 +4,8 @@
     "type": "project",
     "require": {
         "php": ">=8.3",
-        "sauerkraut/ui": "@dev"
+        "sauerkraut/ui": "@dev",
+        "sauerkraut/cms": "@dev"
     },
     "autoload": {
         "psr-4": {
@@ -16,6 +17,10 @@
         {
             "type": "path",
             "url": "./packages/sauerkraut-ui"
+        },
+        {
+            "type": "path",
+            "url": "./packages/sauerkraut-cms"
         }
     ]
 }

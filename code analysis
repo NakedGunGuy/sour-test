@@ -1,0 +1,136 @@
+~/dev/projects/sauerkraut/database/schema.sql
+Warning:(1, 1) No data sources are configured to run this SQL and provide advanced code assistance.
+~/dev/projects/sauerkraut/database/queries/posts.sql
+Warning:(1, 1) No data sources are configured to run this SQL and provide advanced code assistance.
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/table/head/head.php
+Error:(1, 16) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/card/card.php
+Error:(2, 9) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/pages/list.php
+Error:(2, 15) Undefined variable '$tableConfig'
+Error:(3, 80) Undefined variable '$table'
+Error:(7, 15) Undefined variable '$total'
+Error:(12, 24) Undefined variable '$columns'
+Error:(18, 24) Undefined variable '$rows'
+Error:(28, 48) Undefined variable '$pkName'
+Warning:(33, 40) 'ext-mbstring' is missing in composer.json
+Warning:(33, 63) 'ext-mbstring' is missing in composer.json
+Error:(53, 11) Undefined variable '$totalPages'
+Error:(55, 19) Undefined variable '$page'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/pages/edit.php
+Error:(2, 15) Undefined variable '$title'
+Error:(3, 56) Undefined variable '$table'
+Error:(6, 54) Undefined variable '$isEdit'
+Error:(6, 81) Undefined variable '$id'
+Error:(9, 20) Undefined variable '$fields'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/table/row/row.php
+Error:(1, 69) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-ui/components/table/head/head.php
+Error:(1, 76) Undefined variable '$slot'
+~/dev/projects/sauerkraut/framework/Database/Connection.php
+Warning:(8, 5) 'ext-pdo' is missing in composer.json
+Warning:(12, 13) 'ext-pdo' is missing in composer.json
+Warning:(15, 34) 'ext-pdo' is missing in composer.json
+Warning:(46, 20) 'ext-pdo' is missing in composer.json
+Warning:(47, 28) 'ext-pdo' is missing in composer.json
+Warning:(47, 47) 'ext-pdo' is missing in composer.json
+Warning:(48, 28) 'ext-pdo' is missing in composer.json
+Warning:(48, 58) 'ext-pdo' is missing in composer.json
+Warning:(49, 28) 'ext-pdo' is missing in composer.json
+Warning:(59, 61) 'ext-pdo' is missing in composer.json
+Warning:(100, 28) 'ext-pdo' is missing in composer.json
+~/dev/projects/sauerkraut/packages/sauerkraut-ui/components/table/row/row.php
+Warning:(2, 95) Attribute hx-swap-oob is not allowed here
+Error:(2, 177) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/button/a/a.php
+Error:(5, 79) Undefined variable '$slot'
+~/dev/projects/sauerkraut/frontend/pages/partials/htmx-row.php
+Error:(6, 54) Undefined variable '$id'
+Error:(7, 15) Undefined variable '$name'
+Error:(8, 15) Undefined variable '$role'
+Warning:(12, 39) Attribute hx-get is not allowed here
+Warning:(12, 133) Attribute hx-swap is not allowed here
+~/dev/projects/sauerkraut/packages/sauerkraut-ui/components/table/table.php
+Error:(5, 113) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/table/table.php
+Error:(5, 113) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/pages/index.php
+Error:(6, 20) Undefined variable '$tables'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/button/button.php
+Error:(5, 164) Undefined variable '$slot'
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/components/form-field/form-field.css
+Warning:(24, 9) Font property font-family does not have generic default
+~/dev/projects/sauerkraut/frontend/pages/layout.php
+Warning:(24, 18) Missed locally stored library for HTTP link
+Warning:(25, 18) Missed locally stored library for HTTP link
+Warning:(27, 7) Attribute hx-ext is not allowed here
+Error:(28, 9) Undefined variable '$content'
+~/dev/projects/sauerkraut/framework/Route.php
+Warning:(35, 56) Redundant character escape '\}' in RegExp
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/src/CmsController.php
+Warning:(39, 43) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(39, 80) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(70, 42) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(70, 80) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(75, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(75, 38) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(75, 61) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(75, 85) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 18) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 41) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 58) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 90) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 115) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(92, 137) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(155, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(155, 38) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(155, 58) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(179, 18) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(179, 49) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(179, 88) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(201, 18) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(201, 58) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(202, 48) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(202, 86) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(202, 131) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(203, 53) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(244, 60) Method 'post' not found in \Sauerkraut\Request
+Warning:(251, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(251, 36) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(251, 51) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(251, 76) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(275, 60) Method 'post' not found in \Sauerkraut\Request
+Warning:(286, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(286, 31) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(286, 72) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(286, 90) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(301, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(301, 36) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(301, 56) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(346, 26) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(346, 53) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(346, 70) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(346, 102) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(346, 127) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+~/dev/projects/sauerkraut/framework/Database/Schema/LabelResolver.php
+Warning:(50, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(50, 34) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(50, 58) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(50, 80) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+~/dev/projects/sauerkraut/framework/Database/Schema/Inspector.php
+Warning:(50, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(109, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(133, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(142, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(151, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+Warning:(171, 14) No data sources are configured to run this SQL and provide advanced code assistance. Disable this inspection via problem menu (Alt+Enter).
+~/dev/projects/sauerkraut/packages/sauerkraut-cms/pages/layout.php
+Warning:(42, 25) Property margin-top is overwritten
+Warning:(42, 110) Property margin-top overwrites property margin-top
+Error:(47, 17) Undefined variable '$content'
+~/dev/projects/sauerkraut/framework/View/View.php
+Warning:(125, 18) Missing required 'lang' attribute
+~/dev/projects/sauerkraut/frontend/pages/home.php
+Warning:(86, 41) Attribute hx-get is not allowed here
+Warning:(86, 62) Attribute hx-target is not allowed here
+Warning:(86, 93) Attribute hx-swap is not allowed here
