@@ -2,3 +2,5 @@
 /storage/logs/*.log
 /storage/cache/
 *.tmp.*
+/storage/database.sqlite
+/.idea/

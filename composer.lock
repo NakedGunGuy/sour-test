@@ -4,11 +4,44 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8878d548cea2187a9a4a76b22c70719c",
+    "content-hash": "c15a5d4d392968bf0e8d59b0bf913a65",
     "packages": [
         {
+            "name": "sauerkraut/cms",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "./packages/sauerkraut-cms",
+                "reference": "6772579fa053da52c94ef4ee4b75a6cc46b51c5b"
+            },
+            "require": {
+                "php": ">=8.3"
+            },
+            "type": "library",
+            "extra": {
+                "sauerkraut": {
+                    "components-path": "components",
+                    "components-prefix": "cms:",
+                    "components-group": "cms",
+                    "pages-path": "pages",
+                    "routes": "routes/cms.php",
+                    "config": "config/cms.php",
+                    "css": "css/cms.css"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Sauerkraut\\CMS\\": "src/"
+                }
+            },
+            "description": "Auto-discovering CMS for the Sauerkraut framework",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "sauerkraut/ui",
-            "version": "dev-main",
+            "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "./packages/sauerkraut-ui",
@@ -33,6 +66,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "sauerkraut/cms": 20,
         "sauerkraut/ui": 20
     },
     "prefer-stable": false,

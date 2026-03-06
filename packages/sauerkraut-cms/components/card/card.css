@@ -1,0 +1,38 @@
+@layer components {
+    .card {
+        container-type: inline-size;
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: box-shadow var(--duration) var(--ease-out);
+
+        &:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-body {
+            display: grid;
+            gap: var(--space-sm);
+            padding: var(--space-lg);
+        }
+
+        .card-title {
+            font-size: var(--text-lg);
+            font-weight: 600;
+            color: var(--text-0);
+        }
+
+        .card-description {
+            font-size: var(--text-sm);
+            color: var(--text-1);
+            line-height: 1.6;
+        }
+
+        .card-footer {
+            display: flex;
+            gap: var(--space-sm);
+            padding-top: var(--space-sm);
+        }
+    }
+}

@@ -11,16 +11,18 @@ class Route
     private mixed $handler;
     private array $middleware;
     private ?string $name;
+    private string $app;
     private string $regex;
     private array $paramNames;
 
-    public function __construct(string $method, string $pattern, mixed $handler, array $middleware = [], ?string $name = null)
+    public function __construct(string $method, string $pattern, mixed $handler, array $middleware = [], ?string $name = null, string $app = 'frontend')
     {
         $this->method = strtoupper($method);
         $this->pattern = $pattern;
         $this->handler = $handler;
         $this->middleware = $middleware;
         $this->name = $name;
+        $this->app = $app;
 
         [$this->regex, $this->paramNames] = $this->compile($pattern);
     }
@@ -75,6 +77,11 @@ class Route
     public function name(): ?string
     {
         return $this->name;
+    }
+
+    public function app(): string
+    {
+        return $this->app;
     }
 
     public function url(array $params = []): string

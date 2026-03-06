@@ -30,9 +30,7 @@ class Csrf implements Middleware
 
     private function ensureToken(): void
     {
-        if (!Session::has('_csrf_token')) {
-            Session::set('_csrf_token', bin2hex(random_bytes(32)));
-        }
+        static::token();
     }
 
     public static function token(): string

@@ -10,11 +10,12 @@ class Component
     private static array $queuedScripts = [];
     private static array $stack = [];
 
-    public static function register(string $name, string $path, string $group = 'front'): void
+    public static function register(string $name, string $path, string $group = 'frontend'): void
     {
         static::$registered[$name] = rtrim($path, '/');
         static::$groups[$name] = $group;
     }
+
 
     public static function render(string $name, array $props = [], ?string $slot = null): string
     {
@@ -25,7 +26,8 @@ class Component
         $path = static::$registered[$name]
             ?? throw new \RuntimeException("Component [{$name}] is not registered.");
 
-        $basename = basename($name);
+        // For namespaced components like "cms:button", the filename is "button"
+        $basename = str_contains($name, ':') ? explode(':', $name, 2)[1] : basename($name);
         $template = "{$path}/{$basename}.php";
         $stylesheet = "{$path}/{$basename}.css";
 
@@ -56,12 +58,15 @@ class Component
         $parentPath = static::$registered[$parent]
             ?? throw new \RuntimeException("Component [{$parent}] is not registered (parent of [{$name}]).");
 
+        $parentGroup = static::$groups[$parent] ?? 'frontend';
+        $parentBasename = str_contains($parent, ':') ? explode(':', $parent, 2)[1] : $parent;
+
         $childDir = "{$parentPath}/{$child}";
-        $parentTemplate = "{$parentPath}/{$parent}.php";
+        $parentTemplate = "{$parentPath}/{$parentBasename}.php";
         $childTemplate = "{$childDir}/{$child}.php";
-        $parentStylesheet = "{$parentPath}/{$parent}.css";
+        $parentStylesheet = "{$parentPath}/{$parentBasename}.css";
         $childStylesheet = "{$childDir}/{$child}.css";
-        $parentScript = "{$parentPath}/{$parent}.js";
+        $parentScript = "{$parentPath}/{$parentBasename}.js";
         $childScript = "{$childDir}/{$child}.js";
 
         $template = file_exists($childTemplate) ? $childTemplate : $parentTemplate;
@@ -76,6 +81,7 @@ class Component
 
         if (file_exists($childStylesheet) && !isset(static::$queuedStyles[$name])) {
             static::$queuedStyles[$name] = $childStylesheet;
+            static::$groups[$name] = $parentGroup;
         }
 
         if (file_exists($parentScript) && !isset(static::$queuedScripts[$parent])) {
@@ -84,6 +90,7 @@ class Component
 
         if (file_exists($childScript) && !isset(static::$queuedScripts[$name])) {
             static::$queuedScripts[$name] = $childScript;
+            static::$groups[$name] = $parentGroup;
         }
 
         ob_start();
@@ -130,7 +137,8 @@ class Component
             return null;
         }
 
-        $stylesheet = "{$path}/{$name}.css";
+        $basename = str_contains($name, ':') ? explode(':', $name, 2)[1] : $name;
+        $stylesheet = "{$path}/{$basename}.css";
 
         return file_exists($stylesheet) ? file_get_contents($stylesheet) : null;
     }
@@ -139,9 +147,11 @@ class Component
      * Returns all registered component CSS for a group (inline mode).
      * Returns empty string in link mode.
      */
-    public static function inlineStyles(string $group = 'front'): string
+    public static function inlineStyles(?string $group = null): string
     {
-        if (config('app.css', 'link') !== 'inline') {
+        $group ??= View::currentApp();
+
+        if (config('assets', 'link') !== 'inline') {
             return '';
         }
 
@@ -152,7 +162,7 @@ class Component
                 continue;
             }
 
-            $basename = basename($name);
+            $basename = str_contains($name, ':') ? explode(':', $name, 2)[1] : basename($name);
             $stylesheet = "{$path}/{$basename}.css";
 
             if (file_exists($stylesheet)) {
@@ -177,20 +187,25 @@ class Component
      * Returns <link> tags for queued components (link mode).
      * Returns empty string in inline mode.
      */
-    public static function linkTags(): string
+    public static function linkTags(?string $group = null): string
     {
-        if (config('app.css', 'link') === 'inline') {
+        $group ??= View::currentApp();
+
+        if (config('assets', 'link') === 'inline') {
             return '';
         }
 
-        if (empty(static::$queuedStyles)) {
-            return '';
+        $slugs = [];
+        foreach (static::$queuedStyles as $name => $path) {
+            if ((static::$groups[$name] ?? 'frontend') !== $group) {
+                continue;
+            }
+            $slugs[] = str_replace('/', '.', $name);
         }
 
-        $slugs = array_map(
-            fn($name) => str_replace('/', '.', $name),
-            array_keys(static::$queuedStyles)
-        );
+        if (empty($slugs)) {
+            return '';
+        }
 
         return '    <link rel="stylesheet" href="/css/components.css?c=' . implode(',', $slugs) . '">' . "\n";
     }
@@ -216,14 +231,17 @@ class Component
             return null;
         }
 
-        $script = "{$path}/{$name}.js";
+        $basename = str_contains($name, ':') ? explode(':', $name, 2)[1] : $name;
+        $script = "{$path}/{$basename}.js";
 
         return file_exists($script) ? file_get_contents($script) : null;
     }
 
-    public static function inlineScripts(string $group = 'front'): string
+    public static function inlineScripts(?string $group = null): string
     {
-        if (config('app.css', 'link') !== 'inline') {
+        $group ??= View::currentApp();
+
+        if (config('assets', 'link') !== 'inline') {
             return '';
         }
 
@@ -234,7 +252,8 @@ class Component
                 continue;
             }
 
-            $script = "{$path}/{$name}.js";
+            $basename = str_contains($name, ':') ? explode(':', $name, 2)[1] : $name;
+            $script = "{$path}/{$basename}.js";
 
             if (file_exists($script)) {
                 $js = file_get_contents($script);
@@ -254,22 +273,45 @@ class Component
         return $output;
     }
 
-    public static function scriptTags(): string
+    public static function scriptTags(?string $group = null): string
     {
-        if (config('app.css', 'link') === 'inline') {
+        $group ??= View::currentApp();
+
+        if (config('assets', 'link') === 'inline') {
             return '';
         }
 
-        if (empty(static::$queuedScripts)) {
-            return '';
+        $slugs = [];
+        foreach (static::$queuedScripts as $name => $path) {
+            if ((static::$groups[$name] ?? 'frontend') !== $group) {
+                continue;
+            }
+            $slugs[] = str_replace('/', '.', $name);
         }
 
-        $slugs = array_map(
-            fn($name) => str_replace('/', '.', $name),
-            array_keys(static::$queuedScripts)
-        );
+        if (empty($slugs)) {
+            return '';
+        }
 
         return '    <script src="/js/components.js?c=' . implode(',', $slugs) . '" defer></script>' . "\n";
+    }
+
+    public static function bundleAssets(string $type, string $names): string
+    {
+        $output = '';
+
+        foreach (explode(',', $names) as $slug) {
+            $name = str_replace('.', '/', $slug);
+            $content = $type === 'js'
+                ? static::getScriptContent($name)
+                : static::getStylesheetContent($name);
+
+            if ($content !== null) {
+                $output .= "/* {$name} */\n{$content}\n";
+            }
+        }
+
+        return $output;
     }
 
     public static function reset(): void

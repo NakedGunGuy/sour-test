@@ -55,6 +55,41 @@ class Config
         $target[end($segments)] = $value;
     }
 
+    /**
+     * Load config from a package path as defaults (won't override existing keys).
+     */
+    public function loadPackageConfig(string $file, ?string $namespace = null): void
+    {
+        if (!file_exists($file)) {
+            return;
+        }
+
+        $key = $namespace ?? basename($file, '.php');
+        $values = require $file;
+
+        if (!isset($this->items[$key])) {
+            // No project override at all — use package defaults
+            $this->items[$key] = $values;
+        } elseif (is_array($this->items[$key]) && is_array($values)) {
+            // Deep merge: project values override package defaults
+            $this->items[$key] = $this->deepMerge($values, $this->items[$key]);
+        }
+        // If project has a non-array value, keep it as-is
+    }
+
+    private function deepMerge(array $defaults, array $overrides): array
+    {
+        $result = $defaults;
+        foreach ($overrides as $key => $value) {
+            if (is_array($value) && isset($result[$key]) && is_array($result[$key])) {
+                $result[$key] = $this->deepMerge($result[$key], $value);
+            } else {
+                $result[$key] = $value;
+            }
+        }
+        return $result;
+    }
+
     public function all(): array
     {
         return $this->items;

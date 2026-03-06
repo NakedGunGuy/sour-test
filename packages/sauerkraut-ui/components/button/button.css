@@ -12,6 +12,7 @@
         font-weight: 500;
         cursor: pointer;
         transition: all var(--duration) var(--ease-out);
+        max-width: fit-content;
 
         &:hover {
             background: var(--surface-2);

@@ -12,6 +12,17 @@ $router->get('/htmx/alert', function () {
     return Response::html(\Sauerkraut\View\View::partial('partials/htmx-alert'));
 });
 
+$router->get('/htmx/row', function (\Sauerkraut\Request $request) {
+    $id = $request->query('id');
+
+    return Response::html(\Sauerkraut\View\View::partial('partials/htmx-row', [
+        'id' => $id,
+        'name' => $request->query('name'),
+        'role' => $request->query('role'),
+        'target' => "#user-{$id}",
+    ]));
+});
+
 $router->get('/js/components.js', function (\Sauerkraut\Request $request) {
     $names = $request->query('c', '');
 
@@ -19,18 +30,7 @@ $router->get('/js/components.js', function (\Sauerkraut\Request $request) {
         return Response::empty(404);
     }
 
-    $js = '';
-
-    foreach (explode(',', $names) as $slug) {
-        $name = str_replace('.', '/', $slug);
-        $content = Component::getScriptContent($name);
-
-        if ($content !== null) {
-            $js .= "/* {$name} */\n{$content}\n";
-        }
-    }
-
-    return Response::js($js)
+    return Response::js(Component::bundleAssets('js', $names))
         ->withHeader('Cache-Control', 'public, max-age=86400');
 });
 
@@ -41,17 +41,6 @@ $router->get('/css/components.css', function (\Sauerkraut\Request $request) {
         return Response::empty(404);
     }
 
-    $css = '';
-
-    foreach (explode(',', $names) as $slug) {
-        $name = str_replace('.', '/', $slug);
-        $content = Component::getStylesheetContent($name);
-
-        if ($content !== null) {
-            $css .= "/* {$name} */\n{$content}\n";
-        }
-    }
-
-    return Response::css($css)
+    return Response::css(Component::bundleAssets('css', $names))
         ->withHeader('Cache-Control', 'public, max-age=86400');
 });

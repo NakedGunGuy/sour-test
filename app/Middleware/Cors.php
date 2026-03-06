@@ -14,15 +14,15 @@ class Cors implements Middleware
     {
         // Handle preflight
         if ($request->method() === 'OPTIONS') {
-            return Response::empty()
-                ->withHeader('Access-Control-Allow-Origin', '*')
-                ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-                ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            return $this->withCorsHeaders(Response::empty())
                 ->withHeader('Access-Control-Max-Age', '86400');
         }
 
-        $response = $next($request);
+        return $this->withCorsHeaders($next($request));
+    }
 
+    private function withCorsHeaders(Response $response): Response
+    {
         return $response
             ->withHeader('Access-Control-Allow-Origin', '*')
             ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')

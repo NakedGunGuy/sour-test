@@ -11,9 +11,9 @@
     <title><?= e($title ?? 'Sauerkraut') ?></title>
 
     <style>
-        <?= file_get_contents(__DIR__ . '/../theme/layers.css') ?>
-        <?= file_get_contents(__DIR__ . '/../theme/reset.css') ?>
-        <?= file_get_contents(__DIR__ . '/../theme/tokens.css') ?>
+        <?= theme_css('layers.css') ?>
+        <?= theme_css('reset.css') ?>
+        <?= theme_css('tokens.css') ?>
         <?= \Sauerkraut\View\Component::inlineStyles() ?>
     </style>
     <?= \Sauerkraut\View\Component::linkTags() ?>
