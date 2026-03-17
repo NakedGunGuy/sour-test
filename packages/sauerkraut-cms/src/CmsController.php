@@ -16,10 +16,13 @@ use Sauerkraut\View\View;
 
 class CmsController extends Controller
 {
-    private Connection $db;
-    private Inspector $inspector;
-    private LabelResolver $labelResolver;
-    private RelationshipDetector $relationshipDetector;
+    protected Connection $db;
+    protected Inspector $inspector;
+    protected LabelResolver $labelResolver;
+    protected RelationshipDetector $relationshipDetector;
+
+    /** @var array<string, FieldType> Resolved field type instances */
+    private static array $fieldTypeInstances = [];
 
     public function __construct()
     {
@@ -29,6 +32,27 @@ class CmsController extends Controller
         $this->labelResolver = new LabelResolver($this->db);
         $this->relationshipDetector = new RelationshipDetector();
     }
+
+    /**
+     * Resolve the controller for a given table.
+     * Returns a custom controller if configured, otherwise $this.
+     */
+    public static function forTable(string $table): self
+    {
+        $controllerClass = App::getInstance()->config("cms.tables.{$table}.controller");
+
+        if ($controllerClass && class_exists($controllerClass)) {
+            $controller = new $controllerClass();
+            if (!$controller instanceof self) {
+                throw new \RuntimeException("Controller [{$controllerClass}] must extend CmsController.");
+            }
+            return $controller;
+        }
+
+        return new static();
+    }
+
+    // --- Route handlers ---
 
     public function index(Request $request): Response
     {
@@ -71,9 +95,7 @@ class CmsController extends Controller
         $total = $totalRow['cnt'] ?? 0;
         $totalPages = max(1, (int) ceil($total / $perPage));
 
-        $rows = $this->db->queryAll(
-            "SELECT * FROM \"{$table}\" ORDER BY \"{$pkName}\" DESC LIMIT {$perPage} OFFSET {$offset}"
-        );
+        $rows = $this->listQuery($table, $pkName, $perPage, $offset);
 
         // Resolve MTO labels (replace FK IDs with related record labels)
         $mtoMap = [];
@@ -190,7 +212,7 @@ class CmsController extends Controller
             ];
         }
 
-        // Fetch MTM related records
+        // Fetch MTM related records + all available options
         foreach ($relationships['mtm'] as $mtm) {
             $relatedTable = $this->inspector->table($mtm['relatedTable']);
             $relatedConfig = $this->tableConfig($mtm['relatedTable']);
@@ -204,13 +226,24 @@ class CmsController extends Controller
                 [$id]
             );
 
+            $allOptions = $this->db->queryAll(
+                "SELECT * FROM \"{$mtm['relatedTable']}\" ORDER BY \"{$labelCol}\""
+            );
+
+            $linkedIds = array_column($rows, $relatedPk ? $relatedPk->name : 'rowid');
+
             $relatedRecords[] = [
                 'type' => 'mtm',
                 'table' => $mtm['relatedTable'],
+                'junctionTable' => $mtm['junctionTable'],
+                'localFk' => $mtm['localFk']->column,
+                'remoteFk' => $mtm['remoteFk']->column,
                 'displayName' => $relatedConfig->displayName(),
                 'labelColumn' => $labelCol,
                 'pkName' => $relatedPk ? $relatedPk->name : 'rowid',
                 'rows' => $rows,
+                'allOptions' => $allOptions,
+                'linkedIds' => $linkedIds,
             ];
         }
 
@@ -244,6 +277,12 @@ class CmsController extends Controller
             $values[] = $this->castValue($field, $request->post($field->name));
         }
 
+        $data = array_combine($columns, $values);
+        $data = $this->beforeStore($table, $data, $request);
+
+        $columns = array_keys($data);
+        $values = array_values($data);
+
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
         $colNames = implode(', ', array_map(fn ($c) => "\"{$c}\"", $columns));
 
@@ -253,6 +292,10 @@ class CmsController extends Controller
         );
 
         $id = $this->db->lastInsertId();
+
+        $this->syncMtmRelationships($table, $id, $request);
+        $this->afterStore($table, $id, $data, $request);
+
         return Response::redirect("/cms/{$table}/{$id}");
     }
 
@@ -266,13 +309,23 @@ class CmsController extends Controller
 
         $fields = $tableConfig->formFields();
 
-        $setClauses = [];
+        $columns = [];
         $values = [];
 
         foreach ($fields as $field) {
             if ($field->readonly) continue;
-            $setClauses[] = "\"{$field->name}\" = ?";
+            $columns[] = $field->name;
             $values[] = $this->castValue($field, $request->post($field->name));
+        }
+
+        $data = array_combine($columns, $values);
+        $data = $this->beforeUpdate($table, $id, $data, $request);
+
+        $setClauses = [];
+        $values = [];
+        foreach ($data as $col => $val) {
+            $setClauses[] = "\"{$col}\" = ?";
+            $values[] = $val;
         }
 
         // Update updated_at if column exists
@@ -287,6 +340,9 @@ class CmsController extends Controller
             $values
         );
 
+        $this->syncMtmRelationships($table, $id, $request);
+        $this->afterUpdate($table, $id, $data, $request);
+
         return Response::redirect("/cms/{$table}/{$id}");
     }
 
@@ -297,17 +353,124 @@ class CmsController extends Controller
         $pk = $schemaTable->primaryKeyColumn();
         $pkName = $pk ? $pk->name : 'rowid';
 
+        $this->beforeDelete($table, $id, $request);
+
         $this->db->execute(
             "DELETE FROM \"{$table}\" WHERE \"{$pkName}\" = ?",
             [$id]
         );
 
+        $this->afterDelete($table, $id, $request);
+
         return Response::redirect("/cms/{$table}");
+    }
+
+    // --- Lifecycle hooks (override in subclasses) ---
+
+    protected function beforeStore(string $table, array $data, Request $request): array
+    {
+        return $data;
+    }
+
+    protected function afterStore(string $table, string $id, array $data, Request $request): void
+    {
+    }
+
+    protected function beforeUpdate(string $table, string $id, array $data, Request $request): array
+    {
+        return $data;
+    }
+
+    protected function afterUpdate(string $table, string $id, array $data, Request $request): void
+    {
+    }
+
+    protected function beforeDelete(string $table, string $id, Request $request): void
+    {
+    }
+
+    protected function afterDelete(string $table, string $id, Request $request): void
+    {
+    }
+
+    /**
+     * Sync many-to-many relationships from submitted checkbox data.
+     */
+    protected function syncMtmRelationships(string $table, string $id, Request $request): void
+    {
+        $schemaTable = $this->inspector->table($table);
+        $allTables = $this->inspector->allTables();
+        $relationships = $this->relationshipDetector->detect($schemaTable, $allTables);
+
+        foreach ($relationships['mtm'] as $mtm) {
+            $inputName = 'mtm_' . $mtm['junctionTable'];
+
+            // Only sync if the field was present in the form (sentinel hidden input)
+            if ($request->post($inputName . '_present') === null) {
+                continue;
+            }
+
+            $submittedIds = $request->post($inputName) ?? [];
+            if (!is_array($submittedIds)) {
+                $submittedIds = [$submittedIds];
+            }
+
+            $junction = $mtm['junctionTable'];
+            $localCol = $mtm['localFk']->column;
+            $remoteCol = $mtm['remoteFk']->column;
+
+            // Delete existing links
+            $this->db->execute(
+                "DELETE FROM \"{$junction}\" WHERE \"{$localCol}\" = ?",
+                [$id]
+            );
+
+            // Insert new links
+            foreach ($submittedIds as $remoteId) {
+                $this->db->execute(
+                    "INSERT INTO \"{$junction}\" (\"{$localCol}\", \"{$remoteCol}\") VALUES (?, ?)",
+                    [$id, $remoteId]
+                );
+            }
+        }
+    }
+
+    /**
+     * Override to customize the list query for a table.
+     */
+    protected function listQuery(string $table, string $pkName, int $perPage, int $offset): array
+    {
+        return $this->db->queryAll(
+            "SELECT * FROM \"{$table}\" ORDER BY \"{$pkName}\" DESC LIMIT {$perPage} OFFSET {$offset}"
+        );
+    }
+
+    // --- Field type resolution ---
+
+    public static function resolveFieldType(string $type): ?FieldType
+    {
+        if (isset(self::$fieldTypeInstances[$type])) {
+            return self::$fieldTypeInstances[$type];
+        }
+
+        $class = App::getInstance()->config("cms.field_types.{$type}");
+
+        if (!$class || !class_exists($class)) {
+            return null;
+        }
+
+        $instance = new $class();
+        if (!$instance instanceof FieldType) {
+            throw new \RuntimeException("Field type [{$class}] must implement FieldType.");
+        }
+
+        self::$fieldTypeInstances[$type] = $instance;
+        return $instance;
     }
 
     // --- Helpers ---
 
-    private function visibleTableNames(): array
+    protected function visibleTableNames(): array
     {
         $hidden = App::getInstance()->config('cms.hidden_tables', []);
         $names = $this->inspector->tableNames();
@@ -315,7 +478,7 @@ class CmsController extends Controller
         return array_values(array_filter($names, fn ($n) => !in_array($n, $hidden)));
     }
 
-    private function guardTable(string $table): void
+    protected function guardTable(string $table): void
     {
         $visible = $this->visibleTableNames();
         if (!in_array($table, $visible)) {
@@ -323,7 +486,7 @@ class CmsController extends Controller
         }
     }
 
-    private function tableConfig(string $table): TableConfig
+    protected function tableConfig(string $table): TableConfig
     {
         $schemaTable = $this->inspector->table($table);
         $config = App::getInstance()->config("cms.tables.{$table}", []);
@@ -331,7 +494,7 @@ class CmsController extends Controller
     }
 
     /** @return Field[] */
-    private function populateFkOptions(array $fields, \Sauerkraut\Database\Schema\Table $schemaTable): array
+    protected function populateFkOptions(array $fields, \Sauerkraut\Database\Schema\Table $schemaTable): array
     {
         $result = [];
         foreach ($fields as $field) {
@@ -367,7 +530,7 @@ class CmsController extends Controller
         return $result;
     }
 
-    private function allTableSummaries(): array
+    protected function allTableSummaries(): array
     {
         $tableNames = $this->visibleTableNames();
         $summaries = [];
@@ -381,8 +544,14 @@ class CmsController extends Controller
         return $summaries;
     }
 
-    private function castValue(Field $field, mixed $value): mixed
+    protected function castValue(Field $field, mixed $value): mixed
     {
+        // Check for custom field type casting first
+        $fieldType = self::resolveFieldType($field->type);
+        if ($fieldType) {
+            return $fieldType->cast($value, $field);
+        }
+
         if ($value === null || $value === '') {
             return $field->required ? '' : null;
         }

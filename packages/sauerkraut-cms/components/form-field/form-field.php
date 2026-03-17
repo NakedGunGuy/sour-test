@@ -4,6 +4,13 @@ $value = $value ?? $field->default ?? '';
 $error = $error ?? '';
 $id = 'field-' . $field->name;
 $hasError = !empty($error);
+
+// Check for custom field type
+$customFieldType = \Sauerkraut\CMS\CmsController::resolveFieldType($field->type);
+if ($customFieldType) {
+    echo $customFieldType->render($field, $value, $error);
+    return;
+}
 ?>
 <div class="form-field<?= $hasError ? ' has-error' : '' ?>">
     <label class="form-label" for="<?= e($id) ?>">

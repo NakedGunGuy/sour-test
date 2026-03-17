@@ -14,16 +14,26 @@ return [
         'sqlite_sequence',
     ],
 
+    // Custom field types: 'type_name' => FieldType class
+    // These are available to all tables. Set a column's type in the
+    // tables config below, and the matching class handles rendering + casting.
+    //
+    // 'field_types' => [
+    //     'markdown' => \App\Cms\Fields\MarkdownField::class,
+    //     'color'    => \App\Cms\Fields\ColorField::class,
+    // ],
+
     // Per-table overrides
     'tables' => [
         // Example:
         // 'posts' => [
         //     'label' => 'Blog Posts',
+        //     'controller' => \App\Cms\PostsController::class,
         //     'label_column' => 'title',
         //     'hidden_columns' => ['slug'],
         //     'readonly_columns' => ['created_at'],
         //     'columns' => [
-        //         'body' => ['label' => 'Content', 'type' => 'richtext'],
+        //         'body' => ['label' => 'Content', 'type' => 'markdown'],
         //         'published' => ['label' => 'Published?', 'type' => 'boolean'],
         //     ],
         // ],

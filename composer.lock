@@ -12,7 +12,7 @@
             "dist": {
                 "type": "path",
                 "url": "./packages/sauerkraut-cms",
-                "reference": "6772579fa053da52c94ef4ee4b75a6cc46b51c5b"
+                "reference": "2d2f495d8655659000ed63da2a8dad7f7e1b3286"
             },
             "require": {
                 "php": ">=8.3"
