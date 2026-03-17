@@ -7,15 +7,21 @@ namespace Sauerkraut\CMS;
 use App\Controllers\Controller;
 use Sauerkraut\App;
 use Sauerkraut\Database\Connection;
+use Sauerkraut\Database\Schema\DetectedRelationships;
 use Sauerkraut\Database\Schema\Inspector;
 use Sauerkraut\Database\Schema\LabelResolver;
+use Sauerkraut\Database\Schema\ManyToManyRelation;
+use Sauerkraut\Database\Schema\OneToManyRelation;
 use Sauerkraut\Database\Schema\RelationshipDetector;
+use Sauerkraut\Database\Schema\Table;
 use Sauerkraut\Request;
 use Sauerkraut\Response;
 use Sauerkraut\View\View;
 
 class CmsController extends Controller
 {
+    private const PER_PAGE = 25;
+
     protected Connection $db;
     protected Inspector $inspector;
     protected LabelResolver $labelResolver;
@@ -81,57 +87,23 @@ class CmsController extends Controller
         $this->guardTable($table);
         $tableConfig = $this->tableConfig($table);
         $schemaTable = $this->inspector->table($table);
-        $allTables = $this->inspector->allTables();
-        $relationships = $this->relationshipDetector->detect($schemaTable, $allTables);
+        $pkName = $schemaTable->primaryKeyName();
 
         $page = max(1, (int) ($request->query('page') ?? 1));
-        $perPage = 25;
-        $offset = ($page - 1) * $perPage;
-
-        $pk = $schemaTable->primaryKeyColumn();
-        $pkName = $pk ? $pk->name : 'rowid';
+        $offset = ($page - 1) * self::PER_PAGE;
 
         $totalRow = $this->db->queryOne("SELECT COUNT(*) as cnt FROM \"{$table}\"");
         $total = $totalRow['cnt'] ?? 0;
-        $totalPages = max(1, (int) ceil($total / $perPage));
+        $totalPages = max(1, (int) ceil($total / self::PER_PAGE));
 
-        $rows = $this->listQuery($table, $pkName, $perPage, $offset);
-
-        // Resolve MTO labels (replace FK IDs with related record labels)
-        $mtoMap = [];
-        foreach ($relationships['mto'] as $fk) {
-            $relatedTable = $this->inspector->table($fk->referencesTable);
-            $labelCol = $this->labelResolver->labelColumn($relatedTable);
-            $refPk = $relatedTable->primaryKeyColumn();
-            if (!$refPk) continue;
-
-            // Collect all FK IDs for batch query
-            $ids = array_filter(array_unique(array_column($rows, $fk->column)));
-            if (empty($ids)) continue;
-
-            $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $labels = $this->db->queryAll(
-                "SELECT \"{$refPk->name}\", \"{$labelCol}\" FROM \"{$fk->referencesTable}\" WHERE \"{$refPk->name}\" IN ({$placeholders})",
-                array_values($ids)
-            );
-
-            $labelMap = [];
-            foreach ($labels as $row) {
-                $labelMap[$row[$refPk->name]] = $row[$labelCol];
-            }
-            $mtoMap[$fk->column] = [
-                'labels' => $labelMap,
-                'referencesTable' => $fk->referencesTable,
-            ];
-        }
-
-        $listColumns = $tableConfig->listColumns();
+        $rows = $this->listQuery($table, $pkName, self::PER_PAGE, $offset);
+        $mtoMap = $this->resolveMtoLabels($schemaTable, $rows);
 
         return Response::html(View::render('list', [
             'title' => $tableConfig->displayName(),
             'table' => $table,
             'tableConfig' => $tableConfig,
-            'columns' => $listColumns,
+            'columns' => $tableConfig->listColumns(),
             'rows' => $rows,
             'pkName' => $pkName,
             'mtoMap' => $mtoMap,
@@ -147,10 +119,7 @@ class CmsController extends Controller
         $this->guardTable($table);
         $tableConfig = $this->tableConfig($table);
         $schemaTable = $this->inspector->table($table);
-        $fields = $tableConfig->formFields();
-
-        // Populate FK select options
-        $fields = $this->populateFkOptions($fields, $schemaTable);
+        $fields = $this->populateFkOptions($tableConfig->formFields(), $schemaTable);
 
         return Response::html(View::render('edit', [
             'title' => 'Create ' . $tableConfig->displayName(),
@@ -159,7 +128,7 @@ class CmsController extends Controller
             'fields' => $fields,
             'record' => null,
             'isEdit' => false,
-            'relationships' => ['otm' => [], 'mtm' => []],
+            'relationships' => new DetectedRelationships([], [], []),
             'relatedRecords' => [],
             'allTables' => $this->allTableSummaries(),
         ]));
@@ -170,8 +139,7 @@ class CmsController extends Controller
         $this->guardTable($table);
         $tableConfig = $this->tableConfig($table);
         $schemaTable = $this->inspector->table($table);
-        $pk = $schemaTable->primaryKeyColumn();
-        $pkName = $pk ? $pk->name : 'rowid';
+        $pkName = $schemaTable->primaryKeyName();
 
         $record = $this->db->queryOne(
             "SELECT * FROM \"{$table}\" WHERE \"{$pkName}\" = ?",
@@ -182,70 +150,9 @@ class CmsController extends Controller
             return Response::html('<h1>404 Not Found</h1>', 404);
         }
 
-        $fields = $tableConfig->formFields();
-        $fields = $this->populateFkOptions($fields, $schemaTable);
-
-        // Get relationships
-        $allTables = $this->inspector->allTables();
-        $relationships = $this->relationshipDetector->detect($schemaTable, $allTables);
-
-        // Fetch OTM related records
-        $relatedRecords = [];
-        foreach ($relationships['otm'] as $otm) {
-            $relatedTable = $this->inspector->table($otm['table']);
-            $relatedConfig = $this->tableConfig($otm['table']);
-            $labelCol = $this->labelResolver->labelColumn($relatedTable);
-            $relatedPk = $relatedTable->primaryKeyColumn();
-
-            $rows = $this->db->queryAll(
-                "SELECT * FROM \"{$otm['table']}\" WHERE \"{$otm['foreignKey']->column}\" = ?",
-                [$id]
-            );
-
-            $relatedRecords[] = [
-                'type' => 'otm',
-                'table' => $otm['table'],
-                'displayName' => $relatedConfig->displayName(),
-                'labelColumn' => $labelCol,
-                'pkName' => $relatedPk ? $relatedPk->name : 'rowid',
-                'rows' => $rows,
-            ];
-        }
-
-        // Fetch MTM related records + all available options
-        foreach ($relationships['mtm'] as $mtm) {
-            $relatedTable = $this->inspector->table($mtm['relatedTable']);
-            $relatedConfig = $this->tableConfig($mtm['relatedTable']);
-            $labelCol = $this->labelResolver->labelColumn($relatedTable);
-            $relatedPk = $relatedTable->primaryKeyColumn();
-
-            $rows = $this->db->queryAll(
-                "SELECT r.* FROM \"{$mtm['relatedTable']}\" r
-                 JOIN \"{$mtm['junctionTable']}\" j ON j.\"{$mtm['remoteFk']->column}\" = r.\"{$mtm['remoteFk']->referencesColumn}\"
-                 WHERE j.\"{$mtm['localFk']->column}\" = ?",
-                [$id]
-            );
-
-            $allOptions = $this->db->queryAll(
-                "SELECT * FROM \"{$mtm['relatedTable']}\" ORDER BY \"{$labelCol}\""
-            );
-
-            $linkedIds = array_column($rows, $relatedPk ? $relatedPk->name : 'rowid');
-
-            $relatedRecords[] = [
-                'type' => 'mtm',
-                'table' => $mtm['relatedTable'],
-                'junctionTable' => $mtm['junctionTable'],
-                'localFk' => $mtm['localFk']->column,
-                'remoteFk' => $mtm['remoteFk']->column,
-                'displayName' => $relatedConfig->displayName(),
-                'labelColumn' => $labelCol,
-                'pkName' => $relatedPk ? $relatedPk->name : 'rowid',
-                'rows' => $rows,
-                'allOptions' => $allOptions,
-                'linkedIds' => $linkedIds,
-            ];
-        }
+        $fields = $this->populateFkOptions($tableConfig->formFields(), $schemaTable);
+        $relationships = $this->detectRelationships($schemaTable);
+        $relatedRecords = $this->loadRelatedRecords($relationships, $id);
 
         return Response::html(View::render('edit', [
             'title' => 'Edit ' . $tableConfig->displayName(),
@@ -266,23 +173,12 @@ class CmsController extends Controller
     {
         $this->guardTable($table);
         $tableConfig = $this->tableConfig($table);
-        $fields = $tableConfig->formFields();
 
-        $columns = [];
-        $values = [];
-
-        foreach ($fields as $field) {
-            if ($field->readonly) continue;
-            $columns[] = $field->name;
-            $values[] = $this->castValue($field, $request->post($field->name));
-        }
-
-        $data = array_combine($columns, $values);
+        $data = $this->extractFieldData($tableConfig->formFields(), $request);
         $data = $this->beforeStore($table, $data, $request);
 
         $columns = array_keys($data);
         $values = array_values($data);
-
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
         $colNames = implode(', ', array_map(fn ($c) => "\"{$c}\"", $columns));
 
@@ -304,21 +200,9 @@ class CmsController extends Controller
         $this->guardTable($table);
         $tableConfig = $this->tableConfig($table);
         $schemaTable = $this->inspector->table($table);
-        $pk = $schemaTable->primaryKeyColumn();
-        $pkName = $pk ? $pk->name : 'rowid';
+        $pkName = $schemaTable->primaryKeyName();
 
-        $fields = $tableConfig->formFields();
-
-        $columns = [];
-        $values = [];
-
-        foreach ($fields as $field) {
-            if ($field->readonly) continue;
-            $columns[] = $field->name;
-            $values[] = $this->castValue($field, $request->post($field->name));
-        }
-
-        $data = array_combine($columns, $values);
+        $data = $this->extractFieldData($tableConfig->formFields(), $request);
         $data = $this->beforeUpdate($table, $id, $data, $request);
 
         $setClauses = [];
@@ -328,7 +212,6 @@ class CmsController extends Controller
             $values[] = $val;
         }
 
-        // Update updated_at if column exists
         if ($schemaTable->column('updated_at')) {
             $setClauses[] = '"updated_at" = CURRENT_TIMESTAMP';
         }
@@ -350,8 +233,7 @@ class CmsController extends Controller
     {
         $this->guardTable($table);
         $schemaTable = $this->inspector->table($table);
-        $pk = $schemaTable->primaryKeyColumn();
-        $pkName = $pk ? $pk->name : 'rowid';
+        $pkName = $schemaTable->primaryKeyName();
 
         $this->beforeDelete($table, $id, $request);
 
@@ -393,19 +275,161 @@ class CmsController extends Controller
     {
     }
 
+    // --- Data extraction ---
+
+    /**
+     * Extract and cast field values from the request.
+     * Shared between store() and update().
+     *
+     * @param Field[] $fields
+     * @return array<string, mixed>
+     */
+    private function extractFieldData(array $fields, Request $request): array
+    {
+        $data = [];
+
+        foreach ($fields as $field) {
+            if ($field->readonly) {
+                continue;
+            }
+            $data[$field->name] = $this->castValue($field, $request->post($field->name));
+        }
+
+        return $data;
+    }
+
+    // --- Relationship handling ---
+
+    private function detectRelationships(Table $schemaTable): DetectedRelationships
+    {
+        $allTables = $this->inspector->allTables();
+        return $this->relationshipDetector->detect($schemaTable, $allTables);
+    }
+
+    /**
+     * Resolve MTO labels — replace FK IDs with related record labels for the list view.
+     */
+    private function resolveMtoLabels(Table $schemaTable, array $rows): array
+    {
+        $relationships = $this->detectRelationships($schemaTable);
+        $mtoMap = [];
+
+        foreach ($relationships->manyToOne as $fk) {
+            $relatedTable = $this->inspector->table($fk->referencesTable);
+            $labelCol = $this->labelResolver->labelColumn($relatedTable);
+            $refPk = $relatedTable->primaryKeyColumn();
+
+            if (!$refPk) {
+                continue;
+            }
+
+            $ids = array_filter(array_unique(array_column($rows, $fk->column)));
+            if (empty($ids)) {
+                continue;
+            }
+
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $labels = $this->db->queryAll(
+                "SELECT \"{$refPk->name}\", \"{$labelCol}\" FROM \"{$fk->referencesTable}\" WHERE \"{$refPk->name}\" IN ({$placeholders})",
+                array_values($ids)
+            );
+
+            $labelMap = [];
+            foreach ($labels as $row) {
+                $labelMap[$row[$refPk->name]] = $row[$labelCol];
+            }
+
+            $mtoMap[$fk->column] = [
+                'labels' => $labelMap,
+                'referencesTable' => $fk->referencesTable,
+            ];
+        }
+
+        return $mtoMap;
+    }
+
+    /**
+     * Load OTM and MTM related records for the edit view.
+     */
+    private function loadRelatedRecords(DetectedRelationships $relationships, string $id): array
+    {
+        $relatedRecords = [];
+
+        foreach ($relationships->oneToMany as $otm) {
+            $relatedRecords[] = $this->loadOneToManyRecords($otm, $id);
+        }
+
+        foreach ($relationships->manyToMany as $mtm) {
+            $relatedRecords[] = $this->loadManyToManyRecords($mtm, $id);
+        }
+
+        return $relatedRecords;
+    }
+
+    private function loadOneToManyRecords(OneToManyRelation $otm, string $id): array
+    {
+        $relatedTable = $this->inspector->table($otm->table);
+        $relatedConfig = $this->tableConfig($otm->table);
+
+        $rows = $this->db->queryAll(
+            "SELECT * FROM \"{$otm->table}\" WHERE \"{$otm->foreignKey->column}\" = ?",
+            [$id]
+        );
+
+        return [
+            'type' => 'otm',
+            'table' => $otm->table,
+            'displayName' => $relatedConfig->displayName(),
+            'labelColumn' => $this->labelResolver->labelColumn($relatedTable),
+            'pkName' => $relatedTable->primaryKeyName(),
+            'rows' => $rows,
+        ];
+    }
+
+    private function loadManyToManyRecords(ManyToManyRelation $mtm, string $id): array
+    {
+        $relatedTable = $this->inspector->table($mtm->relatedTable);
+        $relatedConfig = $this->tableConfig($mtm->relatedTable);
+        $labelCol = $this->labelResolver->labelColumn($relatedTable);
+        $pkName = $relatedTable->primaryKeyName();
+
+        $rows = $this->db->queryAll(
+            "SELECT r.* FROM \"{$mtm->relatedTable}\" r
+             JOIN \"{$mtm->junctionTable}\" j ON j.\"{$mtm->remoteFk->column}\" = r.\"{$mtm->remoteFk->referencesColumn}\"
+             WHERE j.\"{$mtm->localFk->column}\" = ?",
+            [$id]
+        );
+
+        $allOptions = $this->db->queryAll(
+            "SELECT * FROM \"{$mtm->relatedTable}\" ORDER BY \"{$labelCol}\""
+        );
+
+        return [
+            'type' => 'mtm',
+            'table' => $mtm->relatedTable,
+            'junctionTable' => $mtm->junctionTable,
+            'localFk' => $mtm->localFk->column,
+            'remoteFk' => $mtm->remoteFk->column,
+            'displayName' => $relatedConfig->displayName(),
+            'labelColumn' => $labelCol,
+            'pkName' => $pkName,
+            'rows' => $rows,
+            'allOptions' => $allOptions,
+            'linkedIds' => array_column($rows, $pkName),
+        ];
+    }
+
     /**
      * Sync many-to-many relationships from submitted checkbox data.
      */
     protected function syncMtmRelationships(string $table, string $id, Request $request): void
     {
         $schemaTable = $this->inspector->table($table);
-        $allTables = $this->inspector->allTables();
-        $relationships = $this->relationshipDetector->detect($schemaTable, $allTables);
+        $relationships = $this->detectRelationships($schemaTable);
 
-        foreach ($relationships['mtm'] as $mtm) {
-            $inputName = 'mtm_' . $mtm['junctionTable'];
+        foreach ($relationships->manyToMany as $mtm) {
+            $inputName = 'mtm_' . $mtm->junctionTable;
 
-            // Only sync if the field was present in the form (sentinel hidden input)
             if ($request->post($inputName . '_present') === null) {
                 continue;
             }
@@ -415,20 +439,14 @@ class CmsController extends Controller
                 $submittedIds = [$submittedIds];
             }
 
-            $junction = $mtm['junctionTable'];
-            $localCol = $mtm['localFk']->column;
-            $remoteCol = $mtm['remoteFk']->column;
-
-            // Delete existing links
             $this->db->execute(
-                "DELETE FROM \"{$junction}\" WHERE \"{$localCol}\" = ?",
+                "DELETE FROM \"{$mtm->junctionTable}\" WHERE \"{$mtm->localFk->column}\" = ?",
                 [$id]
             );
 
-            // Insert new links
             foreach ($submittedIds as $remoteId) {
                 $this->db->execute(
-                    "INSERT INTO \"{$junction}\" (\"{$localCol}\", \"{$remoteCol}\") VALUES (?, ?)",
+                    "INSERT INTO \"{$mtm->junctionTable}\" (\"{$mtm->localFk->column}\", \"{$mtm->remoteFk->column}\") VALUES (?, ?)",
                     [$id, $remoteId]
                 );
             }
@@ -494,39 +512,47 @@ class CmsController extends Controller
     }
 
     /** @return Field[] */
-    protected function populateFkOptions(array $fields, \Sauerkraut\Database\Schema\Table $schemaTable): array
+    protected function populateFkOptions(array $fields, Table $schemaTable): array
     {
         $result = [];
+
         foreach ($fields as $field) {
             $fk = $schemaTable->foreignKeyFor($field->name);
-            if ($fk && $field->type === 'select' && empty($field->options)) {
-                $relatedTable = $this->inspector->table($fk->referencesTable);
-                $labelCol = $this->labelResolver->labelColumn($relatedTable);
-                $relatedPk = $relatedTable->primaryKeyColumn();
 
-                if ($relatedPk) {
-                    $rows = $this->db->queryAll(
-                        "SELECT \"{$relatedPk->name}\", \"{$labelCol}\" FROM \"{$fk->referencesTable}\" ORDER BY \"{$labelCol}\""
-                    );
-
-                    $options = array_map(
-                        fn ($row) => $row[$relatedPk->name] . ':' . $row[$labelCol],
-                        $rows
-                    );
-
-                    $field = new Field(
-                        name: $field->name,
-                        label: $field->label,
-                        type: 'select',
-                        required: $field->required,
-                        default: $field->default,
-                        options: $options,
-                        readonly: $field->readonly,
-                    );
-                }
+            if (!$fk || $field->type !== 'select' || !empty($field->options)) {
+                $result[] = $field;
+                continue;
             }
-            $result[] = $field;
+
+            $relatedTable = $this->inspector->table($fk->referencesTable);
+            $labelCol = $this->labelResolver->labelColumn($relatedTable);
+            $relatedPk = $relatedTable->primaryKeyColumn();
+
+            if (!$relatedPk) {
+                $result[] = $field;
+                continue;
+            }
+
+            $rows = $this->db->queryAll(
+                "SELECT \"{$relatedPk->name}\", \"{$labelCol}\" FROM \"{$fk->referencesTable}\" ORDER BY \"{$labelCol}\""
+            );
+
+            $options = array_map(
+                fn ($row) => $row[$relatedPk->name] . ':' . $row[$labelCol],
+                $rows
+            );
+
+            $result[] = new Field(
+                name: $field->name,
+                label: $field->label,
+                type: 'select',
+                required: $field->required,
+                default: $field->default,
+                options: $options,
+                readonly: $field->readonly,
+            );
         }
+
         return $result;
     }
 
@@ -546,7 +572,6 @@ class CmsController extends Controller
 
     protected function castValue(Field $field, mixed $value): mixed
     {
-        // Check for custom field type casting first
         $fieldType = self::resolveFieldType($field->type);
         if ($fieldType) {
             return $fieldType->cast($value, $field);

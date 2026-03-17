@@ -36,6 +36,12 @@ class Table
         return null;
     }
 
+    public function primaryKeyName(): string
+    {
+        $pk = $this->primaryKeyColumn();
+        return $pk ? $pk->name : 'rowid';
+    }
+
     public function foreignKeyFor(string $column): ?ForeignKey
     {
         foreach ($this->foreignKeys as $fk) {

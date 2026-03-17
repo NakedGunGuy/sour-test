@@ -35,17 +35,11 @@ class App
     public static function boot(string $basePath): static
     {
         $app = new static($basePath);
-        $app->registerAutoloader();
         $app->bootstrapConfig();
         $app->bootstrapDatabase();
         $app->discoverPackages();
         $app->bootstrapView();
         return $app;
-    }
-
-    private function registerAutoloader(): void
-    {
-        // Composer handles autoloading — see vendor/autoload.php
     }
 
     private function bootstrapConfig(): void
@@ -92,7 +86,6 @@ class App
                 'install_path' => $installPath,
             ]);
 
-            // Load package config as defaults
             $configPath = $sauerkraut['config'] ?? null;
             if ($configPath) {
                 $config->loadPackageConfig($installPath . '/' . $configPath);
@@ -105,47 +98,56 @@ class App
         View::setBasePath($this->basePath);
 
         foreach ($this->packages as $name => $pkg) {
-            $installPath = $pkg['install_path'];
+            $this->registerPackageAssets($pkg);
+        }
 
-            // Register components
-            $componentsPath = $pkg['components-path'] ?? null;
-            if ($componentsPath) {
-                $dir = $installPath . '/' . $componentsPath;
-                $prefix = $pkg['components-prefix'] ?? '';
-                $group = $pkg['components-group'] ?? 'frontend';
-                if (is_dir($dir)) {
-                    $this->registerComponents($dir, $prefix, $group);
-                }
+        $this->registerProjectComponents();
+        $this->registerProjectOverrides();
+    }
 
-            }
+    private function registerPackageAssets(array $pkg): void
+    {
+        $installPath = $pkg['install_path'];
+        $prefix = $pkg['components-prefix'] ?? '';
+        $group = $pkg['components-group'] ?? 'frontend';
 
-            // Register pages directory as vendor fallback
-            $pagesPath = $pkg['pages-path'] ?? null;
-            if ($pagesPath) {
-                $dir = $installPath . '/' . $pagesPath;
-                $app = $this->appNameFromPackage($pkg);
-                if ($app && is_dir($dir)) {
-                    View::registerPagesDir($app, $dir);
-                }
-            }
-
-            // Register CSS path
-            $cssPath = $pkg['css'] ?? null;
-            if ($cssPath) {
-                $app = $this->appNameFromPackage($pkg);
-                if ($app) {
-                    View::registerCssFile($app, $installPath . '/' . $cssPath);
-                }
+        $componentsPath = $pkg['components-path'] ?? null;
+        if ($componentsPath) {
+            $dir = $installPath . '/' . $componentsPath;
+            if (is_dir($dir)) {
+                $this->registerComponents($dir, $prefix, $group);
             }
         }
 
-        // Project components — override vendor
+        $app = $this->appNameFromPackage($pkg);
+        if (!$app) {
+            return;
+        }
+
+        $pagesPath = $pkg['pages-path'] ?? null;
+        if ($pagesPath) {
+            $dir = $installPath . '/' . $pagesPath;
+            if (is_dir($dir)) {
+                View::registerPagesDir($app, $dir);
+            }
+        }
+
+        $cssPath = $pkg['css'] ?? null;
+        if ($cssPath) {
+            View::registerCssFile($app, $installPath . '/' . $cssPath);
+        }
+    }
+
+    private function registerProjectComponents(): void
+    {
         $componentsDir = $this->basePath . '/frontend/components';
         if (is_dir($componentsDir)) {
             $this->registerComponents($componentsDir, '', 'frontend');
         }
+    }
 
-        // Project-level overrides for package apps (e.g. cms/components/ overrides vendor CMS components)
+    private function registerProjectOverrides(): void
+    {
         foreach ($this->packages as $name => $pkg) {
             $app = $this->appNameFromPackage($pkg);
             if (!$app) {
@@ -160,33 +162,33 @@ class App
                 $this->registerComponents($overrideDir, $prefix, $group);
             }
 
-            // Project-level pages override vendor pages
             $overridePagesDir = $this->basePath . '/' . $app . '/pages';
             if (is_dir($overridePagesDir)) {
                 View::registerPagesDir($app, $overridePagesDir);
             }
 
-            // Project-level CSS override
-            if (isset($pkg['css'])) {
-                $overrideCss = $this->basePath . '/' . $app . '/' . basename($pkg['css']);
-                if (file_exists($overrideCss)) {
-                    View::registerCssFile($app, $overrideCss);
-                }
+            if (!isset($pkg['css'])) {
+                continue;
+            }
+
+            $overrideCss = $this->basePath . '/' . $app . '/' . basename($pkg['css']);
+            if (file_exists($overrideCss)) {
+                View::registerCssFile($app, $overrideCss);
             }
         }
     }
 
     /**
      * Derive the app name from a package config.
-     * e.g. components-prefix "cms:" → app name "cms"
+     * e.g. components-prefix "cms:" -> app name "cms"
      */
     private function appNameFromPackage(array $pkg): ?string
     {
         $prefix = $pkg['components-prefix'] ?? '';
-        if ($prefix) {
-            return rtrim($prefix, ':');
+        if (!$prefix) {
+            return null;
         }
-        return null;
+        return rtrim($prefix, ':');
     }
 
     private function registerComponents(string $dir, string $prefix, string $group): void
@@ -194,12 +196,7 @@ class App
         foreach (glob("{$dir}/*", GLOB_ONLYDIR) as $subdir) {
             $name = basename($subdir);
 
-            if ($prefix && !str_contains($prefix, '/')) {
-                // Namespace prefix like "cms:" — no slash between prefix and name
-                $fullName = $prefix . $name;
-            } else {
-                $fullName = $prefix ? "{$prefix}/{$name}" : $name;
-            }
+            $fullName = $this->resolveComponentName($prefix, $name);
 
             if (file_exists("{$subdir}/{$name}.php")) {
                 Component::register($fullName, $subdir, $group);
@@ -207,6 +204,20 @@ class App
                 $this->registerComponents($subdir, $fullName, $group);
             }
         }
+    }
+
+    private function resolveComponentName(string $prefix, string $name): string
+    {
+        if (!$prefix) {
+            return $name;
+        }
+
+        // Namespace prefix like "cms:" — no slash between prefix and name
+        if (!str_contains($prefix, '/')) {
+            return $prefix . $name;
+        }
+
+        return "{$prefix}/{$name}";
     }
 
     // --- Service Container ---
@@ -276,24 +287,19 @@ class App
             $matched = $router->match($request->method(), $request->path());
 
             if ($matched === null) {
-                $response = Response::html('<h1>404 Not Found</h1>', 404);
-                $response->send();
+                Response::html('<h1>404 Not Found</h1>', 404)->send();
                 return;
             }
 
             [$route, $params] = $matched;
             $request->setRouteParams($params);
-
             View::setCurrentApp($route->app());
-
-            $middlewareClasses = $route->middleware();
-            $handler = $route->handler();
 
             $pipeline = new Pipeline();
             $response = $pipeline->send($request)
-                ->through($middlewareClasses)
-                ->then(function (Request $request) use ($handler, $params) {
-                    return $this->callHandler($handler, $request, $params);
+                ->through($route->middleware())
+                ->then(function (Request $request) use ($route, $params) {
+                    return $this->callHandler($route->handler(), $request, $params);
                 });
 
             $response->send();
@@ -304,22 +310,20 @@ class App
 
     private function handleException(\Throwable $e): void
     {
-        $debug = $this->config('app.debug', false);
-
         $this->logException($e);
 
-        if ($debug) {
-            $message = htmlspecialchars($e->getMessage());
-            $file = htmlspecialchars($e->getFile() . ':' . $e->getLine());
-            $trace = htmlspecialchars($e->getTraceAsString());
-            Response::html(
-                "<h1>500 — {$message}</h1><p>{$file}</p><pre>{$trace}</pre>",
-                500,
-            )->send();
+        if (!$this->config('app.debug', false)) {
+            Response::html('<h1>500 Internal Server Error</h1>', 500)->send();
             return;
         }
 
-        Response::html('<h1>500 Internal Server Error</h1>', 500)->send();
+        $message = htmlspecialchars($e->getMessage());
+        $file = htmlspecialchars($e->getFile() . ':' . $e->getLine());
+        $trace = htmlspecialchars($e->getTraceAsString());
+        Response::html(
+            "<h1>500 — {$message}</h1><p>{$file}</p><pre>{$trace}</pre>",
+            500,
+        )->send();
     }
 
     private function logException(\Throwable $e): void
@@ -345,7 +349,6 @@ class App
 
     private function loadRoutes(Router $router): void
     {
-        // Project routes
         $webRoutes = $this->basePath . '/routes/web.php';
         if (file_exists($webRoutes)) {
             $router->group([], function (Router $router) use ($webRoutes) {
@@ -353,46 +356,45 @@ class App
             });
         }
 
-        // Package routes
         foreach ($this->packages as $name => $pkg) {
-            $routeFile = $pkg['routes'] ?? null;
-            if (!$routeFile) {
-                continue;
-            }
-
-            $routePath = $pkg['install_path'] . '/' . $routeFile;
-
-            // Project-level override
-            $overridePath = $this->basePath . '/routes/' . basename($routeFile);
-            if (file_exists($overridePath)) {
-                $routePath = $overridePath;
-            }
-
-            if (!file_exists($routePath)) {
-                continue;
-            }
-
-            $app = $this->appNameFromPackage($pkg) ?? '';
-            $router->group(['prefix' => $app, 'app' => $app ?: 'frontend'], function (Router $router) use ($routePath) {
-                require $routePath;
-            });
+            $this->loadPackageRoutes($router, $pkg);
         }
+    }
+
+    private function loadPackageRoutes(Router $router, array $pkg): void
+    {
+        $routeFile = $pkg['routes'] ?? null;
+        if (!$routeFile) {
+            return;
+        }
+
+        $routePath = $pkg['install_path'] . '/' . $routeFile;
+
+        $overridePath = $this->basePath . '/routes/' . basename($routeFile);
+        if (file_exists($overridePath)) {
+            $routePath = $overridePath;
+        }
+
+        if (!file_exists($routePath)) {
+            return;
+        }
+
+        $app = $this->appNameFromPackage($pkg) ?? '';
+        $router->group(['prefix' => $app, 'app' => $app ?: 'frontend'], function (Router $router) use ($routePath) {
+            require $routePath;
+        });
     }
 
     private function callHandler(mixed $handler, Request $request, array $params): Response
     {
-        // Closure handler
         if ($handler instanceof \Closure) {
-            $result = $handler($request, ...$params);
-            return $this->toResponse($result);
+            return $this->toResponse($handler($request, ...$params));
         }
 
-        // [Controller::class, 'method'] handler
         if (is_array($handler) && count($handler) === 2) {
             [$class, $method] = $handler;
             $controller = new $class();
-            $result = $controller->$method($request, ...array_values($params));
-            return $this->toResponse($result);
+            return $this->toResponse($controller->$method($request, ...array_values($params)));
         }
 
         throw new \RuntimeException('Invalid route handler.');

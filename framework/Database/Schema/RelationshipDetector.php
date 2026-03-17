@@ -10,24 +10,22 @@ class RelationshipDetector
 
     /**
      * @param Table[] $allTables
-     * @return array{mto: array, otm: array, mtm: array}
      */
-    public function detect(Table $table, array $allTables): array
+    public function detect(Table $table, array $allTables): DetectedRelationships
     {
         $tableIndex = [];
         foreach ($allTables as $t) {
             $tableIndex[$t->name] = $t;
         }
 
-        return [
-            'mto' => $this->manyToOne($table),
-            'otm' => $this->oneToMany($table, $tableIndex),
-            'mtm' => $this->manyToMany($table, $tableIndex),
-        ];
+        return new DetectedRelationships(
+            manyToOne: $this->manyToOne($table),
+            oneToMany: $this->oneToMany($table, $tableIndex),
+            manyToMany: $this->manyToMany($table, $tableIndex),
+        );
     }
 
     /**
-     * MTO: This table has FKs pointing to other tables.
      * @return ForeignKey[]
      */
     private function manyToOne(Table $table): array
@@ -36,8 +34,7 @@ class RelationshipDetector
     }
 
     /**
-     * OTM: Other tables have FKs pointing to this table (excluding junction tables).
-     * @return array<array{table: string, foreignKey: ForeignKey}>
+     * @return OneToManyRelation[]
      */
     private function oneToMany(Table $table, array $tableIndex): array
     {
@@ -47,6 +44,7 @@ class RelationshipDetector
         }
 
         $result = [];
+
         foreach ($tableIndex as $otherTable) {
             if ($otherTable->name === $table->name) {
                 continue;
@@ -54,9 +52,10 @@ class RelationshipDetector
             if ($this->isJunctionTable($otherTable)) {
                 continue;
             }
+
             foreach ($otherTable->foreignKeys as $fk) {
                 if ($fk->referencesTable === $table->name && $fk->referencesColumn === $pk->name) {
-                    $result[] = ['table' => $otherTable->name, 'foreignKey' => $fk];
+                    $result[] = new OneToManyRelation($otherTable->name, $fk);
                 }
             }
         }
@@ -65,8 +64,7 @@ class RelationshipDetector
     }
 
     /**
-     * MTM: Junction tables connecting this table to another.
-     * @return array<array{junctionTable: string, relatedTable: string, localFk: ForeignKey, remoteFk: ForeignKey}>
+     * @return ManyToManyRelation[]
      */
     private function manyToMany(Table $table, array $tableIndex): array
     {
@@ -76,6 +74,7 @@ class RelationshipDetector
         }
 
         $result = [];
+
         foreach ($tableIndex as $candidate) {
             if (!$this->isJunctionTable($candidate)) {
                 continue;
@@ -93,12 +92,12 @@ class RelationshipDetector
             }
 
             if ($localFk && $remoteFk) {
-                $result[] = [
-                    'junctionTable' => $candidate->name,
-                    'relatedTable' => $remoteFk->referencesTable,
-                    'localFk' => $localFk,
-                    'remoteFk' => $remoteFk,
-                ];
+                $result[] = new ManyToManyRelation(
+                    $candidate->name,
+                    $remoteFk->referencesTable,
+                    $localFk,
+                    $remoteFk,
+                );
             }
         }
 
@@ -111,7 +110,8 @@ class RelationshipDetector
             return false;
         }
 
-        $meaningfulColumns = 0;
+        $fkColumns = array_map(fn (ForeignKey $fk) => $fk->column, $table->foreignKeys);
+
         foreach ($table->columns as $col) {
             if ($col->primaryKey) {
                 continue;
@@ -119,19 +119,13 @@ class RelationshipDetector
             if (in_array($col->name, self::IGNORED_COLUMNS)) {
                 continue;
             }
-            // Check if this column is one of the FK columns
-            $isFk = false;
-            foreach ($table->foreignKeys as $fk) {
-                if ($fk->column === $col->name) {
-                    $isFk = true;
-                    break;
-                }
+            if (in_array($col->name, $fkColumns)) {
+                continue;
             }
-            if (!$isFk) {
-                $meaningfulColumns++;
-            }
+
+            return false;
         }
 
-        return $meaningfulColumns === 0;
+        return true;
     }
 }
