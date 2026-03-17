@@ -122,7 +122,7 @@ class View
             return $content;
         }
 
-        return "<html><head>{$head}</head><body>{$content}</body></html>";
+        return "<html lang=\"en\"><head>{$head}</head><body>{$content}</body></html>";
     }
 
     /**

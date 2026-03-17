@@ -39,7 +39,7 @@
                     <?php endforeach; ?>
                 </ul>
             </nav>
-            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border); margin-top: var(--space-lg);">
+            <div style="margin-top: auto; padding-top: var(--space-lg); border-top: 1px solid var(--border);">
                 <a href="/" style="color: var(--text-2); font-size: var(--text-sm); text-decoration: none;">&larr; Back to site</a>
             </div>
         </aside>

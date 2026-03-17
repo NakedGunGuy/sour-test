@@ -32,7 +32,7 @@ class Route
         $paramNames = [];
 
         // Match {param} segments
-        $regex = preg_replace_callback('/\{([a-zA-Z_]+)\}/', function ($m) use (&$paramNames) {
+        $regex = preg_replace_callback('/\{([a-zA-Z_]+)}/', function ($m) use (&$paramNames) {
             $paramNames[] = $m[1];
             return '([^/]+)';
         }, $pattern);

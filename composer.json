@@ -4,6 +4,8 @@
     "type": "project",
     "require": {
         "php": ">=8.3",
+        "ext-pdo": "*",
+        "ext-mbstring": "*",
         "sauerkraut/ui": "@dev",
         "sauerkraut/cms": "@dev"
     },
