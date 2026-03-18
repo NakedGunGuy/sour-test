@@ -10,13 +10,12 @@ use Sauerkraut\Database\Connection;
 use Sauerkraut\Database\MigrationRepository;
 use Sauerkraut\Database\Migrator;
 use Sauerkraut\Database\Schema\Inspector;
+use Sauerkraut\View\AppContext;
 use Sauerkraut\View\Component;
 use Sauerkraut\View\View;
 
 class App
 {
-    private static ?self $instance = null;
-
     private array $bindings = [];
     private array $instances = [];
     private string $basePath;
@@ -27,12 +26,6 @@ class App
     public function __construct(string $basePath)
     {
         $this->basePath = rtrim($basePath, '/\\');
-        static::$instance = $this;
-    }
-
-    public static function getInstance(): static
-    {
-        return static::$instance ?? throw new \RuntimeException('App has not been booted.');
     }
 
     public static function boot(string $basePath): static
@@ -305,6 +298,7 @@ class App
     public function handleRequest(): void
     {
         require_once $this->basePath . '/framework/View/helpers.php';
+        AppContext::set($this);
 
         $this->singleton(Router::class, fn () => $this->buildRouter());
 
@@ -424,7 +418,7 @@ class App
 
         if (is_array($handler) && count($handler) === 2) {
             [$class, $method] = $handler;
-            $controller = new $class();
+            $controller = new $class($this);
             return $this->toResponse($controller->$method($request, ...array_values($params)));
         }
 

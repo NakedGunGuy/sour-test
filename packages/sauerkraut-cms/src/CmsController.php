@@ -30,9 +30,9 @@ class CmsController extends Controller
     /** @var array<string, FieldType> Resolved field type instances */
     private static array $fieldTypeInstances = [];
 
-    public function __construct()
+    public function __construct(App $app)
     {
-        $app = App::getInstance();
+        parent::__construct($app);
         $this->db = $app->db();
         $this->inspector = $app->make(Inspector::class);
         $this->labelResolver = new LabelResolver($this->db);
@@ -41,21 +41,21 @@ class CmsController extends Controller
 
     /**
      * Resolve the controller for a given table.
-     * Returns a custom controller if configured, otherwise $this.
+     * Returns a custom controller if configured, otherwise a new instance.
      */
-    public static function forTable(string $table): self
+    public static function forTable(App $app, string $table): self
     {
-        $controllerClass = App::getInstance()->config("cms.tables.{$table}.controller");
+        $controllerClass = $app->config("cms.tables.{$table}.controller");
 
         if ($controllerClass && class_exists($controllerClass)) {
-            $controller = new $controllerClass();
+            $controller = new $controllerClass($app);
             if (!$controller instanceof self) {
                 throw new \RuntimeException("Controller [{$controllerClass}] must extend CmsController.");
             }
             return $controller;
         }
 
-        return new static();
+        return new static($app);
     }
 
     // --- Route handlers ---
@@ -465,13 +465,13 @@ class CmsController extends Controller
 
     // --- Field type resolution ---
 
-    public static function resolveFieldType(string $type): ?FieldType
+    protected function resolveFieldType(string $type): ?FieldType
     {
         if (isset(self::$fieldTypeInstances[$type])) {
             return self::$fieldTypeInstances[$type];
         }
 
-        $class = App::getInstance()->config("cms.field_types.{$type}");
+        $class = $this->app->config("cms.field_types.{$type}");
 
         if (!$class || !class_exists($class)) {
             return null;
@@ -490,7 +490,7 @@ class CmsController extends Controller
 
     protected function visibleTableNames(): array
     {
-        $hidden = App::getInstance()->config('cms.hidden_tables', []);
+        $hidden = $this->app->config('cms.hidden_tables', []);
         $names = $this->inspector->tableNames();
 
         return array_values(array_filter($names, fn ($n) => !in_array($n, $hidden)));
@@ -507,7 +507,7 @@ class CmsController extends Controller
     protected function tableConfig(string $table): TableConfig
     {
         $schemaTable = $this->inspector->table($table);
-        $config = App::getInstance()->config("cms.tables.{$table}", []);
+        $config = $this->app->config("cms.tables.{$table}", []);
         return new TableConfig($schemaTable, $config, $this->labelResolver);
     }
 
@@ -572,7 +572,7 @@ class CmsController extends Controller
 
     protected function castValue(Field $field, mixed $value): mixed
     {
-        $fieldType = self::resolveFieldType($field->type);
+        $fieldType = $this->resolveFieldType($field->type);
         if ($fieldType) {
             return $fieldType->cast($value, $field);
         }

@@ -1,7 +1,7 @@
 <?php
 
+use Sauerkraut\View\AppContext;
 use Sauerkraut\View\Component;
-use Sauerkraut\App;
 
 function component(string $name, array $props = [], ?string $slot = null): string
 {
@@ -25,7 +25,7 @@ function e(string $value): string
 
 function config(string $key, mixed $default = null): mixed
 {
-    $app = App::getInstance();
+    $app = AppContext::get();
 
     // If the key already targets a specific config file (e.g. "app.debug", "cms.tables"),
     // resolve it directly — no fallback chain.
@@ -47,7 +47,7 @@ function config(string $key, mixed $default = null): mixed
 
 function route(string $name, array $params = []): string
 {
-    return App::getInstance()->router()->url($name, $params);
+    return AppContext::get()->router()->url($name, $params);
 }
 
 function url(string $path = ''): string
@@ -72,13 +72,13 @@ function method_field(string $method): string
 
 function db(): \Sauerkraut\Database\Connection
 {
-    return App::getInstance()->db();
+    return AppContext::get()->db();
 }
 
 function theme_css(string $file): string
 {
     $theme = config('theme', 'theme');
-    $path = App::getInstance()->basePath($theme . '/' . $file);
+    $path = AppContext::get()->basePath($theme . '/' . $file);
 
     if (!file_exists($path)) {
         return '';

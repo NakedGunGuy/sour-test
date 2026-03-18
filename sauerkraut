@@ -6,4 +6,5 @@ declare(strict_types=1);
 require_once __DIR__ . '/vendor/autoload.php';
 
 $app = \Sauerkraut\App::boot(__DIR__);
+\Sauerkraut\View\AppContext::set($app);
 exit((new \Sauerkraut\Console\ConsoleApplication($app))->run($argv));
