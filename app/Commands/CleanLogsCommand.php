@@ -14,6 +14,7 @@ use Sauerkraut\Console\Signature;
 class CleanLogsCommand extends Command implements Schedulable
 {
     private const int DAYS_TO_KEEP = 30;
+    private const int SECONDS_PER_DAY = 86400;
 
     public function signature(): Signature
     {
@@ -41,7 +42,7 @@ class CleanLogsCommand extends Command implements Schedulable
             return 0;
         }
 
-        $cutoff = time() - (self::DAYS_TO_KEEP * 86400);
+        $cutoff = time() - (self::DAYS_TO_KEEP * self::SECONDS_PER_DAY);
         $deleted = 0;
 
         foreach (glob("{$logDir}/*.log") as $file) {

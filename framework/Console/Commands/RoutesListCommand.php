@@ -8,7 +8,6 @@ use Sauerkraut\Console\Command;
 use Sauerkraut\Console\Input;
 use Sauerkraut\Console\Output;
 use Sauerkraut\Console\Signature;
-use Sauerkraut\Router;
 
 class RoutesListCommand extends Command
 {
@@ -24,8 +23,7 @@ class RoutesListCommand extends Command
     {
         require_once $this->app->basePath('framework/View/helpers.php');
 
-        $router = new Router();
-        $this->loadRoutes($router);
+        $router = $this->app->buildRouter();
         $routes = $router->routes();
 
         if (empty($routes)) {
@@ -43,7 +41,7 @@ class RoutesListCommand extends Command
                 $route->method(),
                 $route->pattern(),
                 $route->name() ?? '',
-                implode(', ', array_map(fn (string $m) => $this->shortName($m), $route->middleware())),
+                implode(', ', array_map(fn (string $class) => $this->shortName($class), $route->middleware())),
                 $route->app(),
             ];
         }
@@ -52,48 +50,6 @@ class RoutesListCommand extends Command
         $output->newLine();
 
         return 0;
-    }
-
-    private function loadRoutes(Router $router): void
-    {
-        $webRoutes = $this->app->basePath('routes/web.php');
-
-        if (file_exists($webRoutes)) {
-            $router->group([], function (Router $router) use ($webRoutes) {
-                require $webRoutes;
-            });
-        }
-
-        foreach ($this->app->packages() as $name => $pkg) {
-            $this->loadPackageRoutes($router, $pkg);
-        }
-    }
-
-    private function loadPackageRoutes(Router $router, array $pkg): void
-    {
-        $routeFile = $pkg['routes'] ?? null;
-
-        if (!$routeFile) {
-            return;
-        }
-
-        $routePath = $pkg['install_path'] . '/' . $routeFile;
-        $overridePath = $this->app->basePath('routes/' . basename($routeFile));
-
-        if (file_exists($overridePath)) {
-            $routePath = $overridePath;
-        }
-
-        if (!file_exists($routePath)) {
-            return;
-        }
-
-        $prefix = $pkg['components-prefix'] ?? '';
-        $app = $prefix ? rtrim($prefix, ':') : 'frontend';
-
-        $router->group(['prefix' => $app, 'app' => $app ?: 'frontend'], function (Router $router) use ($routePath) {
-            require $routePath;
-        });
     }
 
     private function shortName(string $className): string

@@ -7,6 +7,8 @@ namespace Sauerkraut;
 use Sauerkraut\Config\Config;
 use Sauerkraut\Config\Env;
 use Sauerkraut\Database\Connection;
+use Sauerkraut\Database\MigrationRepository;
+use Sauerkraut\Database\Migrator;
 use Sauerkraut\Database\Schema\Inspector;
 use Sauerkraut\View\Component;
 use Sauerkraut\View\View;
@@ -111,8 +113,8 @@ class App
     {
         View::setBasePath($this->basePath);
 
-        foreach ($this->packages as $name => $pkg) {
-            $this->registerPackageAssets($pkg);
+        foreach ($this->packages as $package) {
+            $this->registerPackageAssets($package);
         }
 
         $this->registerProjectComponents();
@@ -162,14 +164,14 @@ class App
 
     private function registerProjectOverrides(): void
     {
-        foreach ($this->packages as $name => $pkg) {
-            $app = $this->appNameFromPackage($pkg);
+        foreach ($this->packages as $package) {
+            $app = $this->appNameFromPackage($package);
             if (!$app) {
                 continue;
             }
 
-            $prefix = $pkg['components-prefix'] ?? '';
-            $group = $pkg['components-group'] ?? 'frontend';
+            $prefix = $package['components-prefix'] ?? '';
+            $group = $package['components-group'] ?? 'frontend';
 
             $overrideDir = $this->basePath . '/' . $app . '/components';
             if (is_dir($overrideDir)) {
@@ -181,11 +183,11 @@ class App
                 View::registerPagesDir($app, $overridePagesDir);
             }
 
-            if (!isset($pkg['css'])) {
+            if (!isset($package['css'])) {
                 continue;
             }
 
-            $overrideCss = $this->basePath . '/' . $app . '/' . basename($pkg['css']);
+            $overrideCss = $this->basePath . '/' . $app . '/' . basename($package['css']);
             if (file_exists($overrideCss)) {
                 View::registerCssFile($app, $overrideCss);
             }
@@ -272,6 +274,21 @@ class App
         return $this->make(Connection::class);
     }
 
+    public function buildRouter(): Router
+    {
+        $router = new Router();
+        $this->loadRoutes($router);
+
+        return $router;
+    }
+
+    public function migrator(): Migrator
+    {
+        $db = $this->db();
+
+        return new Migrator($db, new MigrationRepository($db), $this->basePath('database/migrations'));
+    }
+
     public function basePath(string $path = ''): string
     {
         return $this->basePath . ($path ? '/' . ltrim($path, '/') : '');
@@ -289,11 +306,7 @@ class App
     {
         require_once $this->basePath . '/framework/View/helpers.php';
 
-        $this->singleton(Router::class, function () {
-            $router = new Router();
-            $this->loadRoutes($router);
-            return $router;
-        });
+        $this->singleton(Router::class, fn () => $this->buildRouter());
 
         try {
             $request = Request::capture();
@@ -374,8 +387,8 @@ class App
             });
         }
 
-        foreach ($this->packages as $name => $pkg) {
-            $this->loadPackageRoutes($router, $pkg);
+        foreach ($this->packages as $package) {
+            $this->loadPackageRoutes($router, $package);
         }
     }
 

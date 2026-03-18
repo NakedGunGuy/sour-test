@@ -63,7 +63,7 @@ class Session
         $_SESSION['_flash'][$key] = $value;
     }
 
-    public static function getFlash(string $key, mixed $default = null): mixed
+    public static function consumeFlash(string $key, mixed $default = null): mixed
     {
         static::start();
         $value = $_SESSION['_flash'][$key] ?? $default;

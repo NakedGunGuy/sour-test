@@ -14,8 +14,8 @@ class RelationshipDetector
     public function detect(Table $table, array $allTables): DetectedRelationships
     {
         $tableIndex = [];
-        foreach ($allTables as $t) {
-            $tableIndex[$t->name] = $t;
+        foreach ($allTables as $table) {
+            $tableIndex[$table->name] = $table;
         }
 
         return new DetectedRelationships(
@@ -104,7 +104,7 @@ class RelationshipDetector
         return $result;
     }
 
-    public function isJunctionTable(Table $table): bool
+    private function isJunctionTable(Table $table): bool
     {
         if (count($table->foreignKeys) !== 2) {
             return false;

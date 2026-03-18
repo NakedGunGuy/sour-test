@@ -76,7 +76,7 @@ class Output
 
     private function buildSeparator(array $widths): string
     {
-        $parts = array_map(fn (int $w) => str_repeat('-', $w + 2), $widths);
+        $parts = array_map(fn (int $width) => str_repeat('-', $width + 2), $widths);
 
         return '+' . implode('+', $parts) . '+';
     }

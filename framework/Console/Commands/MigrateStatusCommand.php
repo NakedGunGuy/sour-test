@@ -8,8 +8,6 @@ use Sauerkraut\Console\Command;
 use Sauerkraut\Console\Input;
 use Sauerkraut\Console\Output;
 use Sauerkraut\Console\Signature;
-use Sauerkraut\Database\MigrationRepository;
-use Sauerkraut\Database\Migrator;
 
 class MigrateStatusCommand extends Command
 {
@@ -23,8 +21,7 @@ class MigrateStatusCommand extends Command
 
     public function handle(Input $input, Output $output): int
     {
-        $migrator = $this->buildMigrator();
-        $statuses = $migrator->status();
+        $statuses = $this->app->migrator()->status();
 
         if (empty($statuses)) {
             $output->info('No migrations found.');
@@ -42,16 +39,5 @@ class MigrateStatusCommand extends Command
         $output->newLine();
 
         return 0;
-    }
-
-    private function buildMigrator(): Migrator
-    {
-        $db = $this->app->db();
-
-        return new Migrator(
-            $db,
-            new MigrationRepository($db),
-            $this->app->basePath('database/migrations'),
-        );
     }
 }

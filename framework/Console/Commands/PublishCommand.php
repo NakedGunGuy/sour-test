@@ -53,7 +53,7 @@ class PublishCommand extends Command
         $output->info('Available packages:');
         $output->newLine();
 
-        foreach ($packages as $name => $config) {
+        foreach (array_keys($packages) as $name) {
             $output->line("  {$name}");
         }
 

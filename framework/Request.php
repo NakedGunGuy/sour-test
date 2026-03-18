@@ -190,12 +190,16 @@ class Request
         return str_contains($this->header('accept', ''), 'json');
     }
 
+    private const string BEARER_PREFIX = 'Bearer ';
+
     public function bearerToken(): ?string
     {
         $auth = $this->header('authorization', '');
-        if (str_starts_with($auth, 'Bearer ')) {
-            return substr($auth, 7);
+
+        if (str_starts_with($auth, self::BEARER_PREFIX)) {
+            return substr($auth, strlen(self::BEARER_PREFIX));
         }
+
         return null;
     }
 

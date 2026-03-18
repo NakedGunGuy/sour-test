@@ -21,7 +21,7 @@ class Csrf implements Middleware
         $token = $request->input('_token') ?? $request->header('x-csrf-token');
         $sessionToken = Session::get('_csrf_token');
 
-        if (!$token || !$sessionToken || !hash_equals($sessionToken, $token)) {
+        if (!$this->isValidToken($token, $sessionToken)) {
             return Response::html('<h1>419 — CSRF Token Mismatch</h1>', 419);
         }
 
@@ -29,6 +29,15 @@ class Csrf implements Middleware
         self::regenerateToken();
 
         return $response;
+    }
+
+    private function isValidToken(?string $token, ?string $sessionToken): bool
+    {
+        if (!$token || !$sessionToken) {
+            return false;
+        }
+
+        return hash_equals($sessionToken, $token);
     }
 
     private function ensureToken(): void

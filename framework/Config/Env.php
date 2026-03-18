@@ -8,6 +8,7 @@ class Env
 {
     private const int NONCE_BYTES = SODIUM_CRYPTO_SECRETBOX_NONCEBYTES;
     private const int KEY_BYTES = SODIUM_CRYPTO_SECRETBOX_KEYBYTES;
+    private const string KEY_PREFIX = 'base64:';
 
     /** @var array<string, string> */
     private static array $variables = [];
@@ -83,7 +84,7 @@ class Env
 
     public static function generateKey(): string
     {
-        return 'base64:' . base64_encode(random_bytes(self::KEY_BYTES));
+        return self::KEY_PREFIX . base64_encode(random_bytes(self::KEY_BYTES));
     }
 
     /** @return array<string, string> */
@@ -133,8 +134,8 @@ class Env
 
     private static function decodeKey(string $key): string
     {
-        if (str_starts_with($key, 'base64:')) {
-            $key = substr($key, 7);
+        if (str_starts_with($key, self::KEY_PREFIX)) {
+            $key = substr($key, strlen(self::KEY_PREFIX));
         }
 
         $decoded = base64_decode($key, strict: true);
