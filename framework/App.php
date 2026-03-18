@@ -126,34 +126,28 @@ class App
         $this->registerProjectOverrides();
     }
 
-    private function registerPackageAssets(array $pkg): void
+    private function registerPackageAssets(array $packageConfig): void
     {
-        $installPath = $pkg['install_path'];
-        $prefix = $pkg['components-prefix'] ?? '';
-        $group = $pkg['components-group'] ?? 'frontend';
+        $installPath = $packageConfig['install_path'];
+        $prefix = $packageConfig['components-prefix'] ?? '';
+        $group = $packageConfig['components-group'] ?? 'frontend';
 
-        $componentsPath = $pkg['components-path'] ?? null;
-        if ($componentsPath) {
-            $dir = $installPath . '/' . $componentsPath;
-            if (is_dir($dir)) {
-                $this->registerComponents($dir, $prefix, $group);
-            }
+        $componentsPath = $packageConfig['components-path'] ?? null;
+        if ($componentsPath && is_dir($installPath . '/' . $componentsPath)) {
+            $this->registerComponents($installPath . '/' . $componentsPath, $prefix, $group);
         }
 
-        $app = $this->appNameFromPackage($pkg);
+        $app = $this->appNameFromPackage($packageConfig);
         if (!$app) {
             return;
         }
 
-        $pagesPath = $pkg['pages-path'] ?? null;
-        if ($pagesPath) {
-            $dir = $installPath . '/' . $pagesPath;
-            if (is_dir($dir)) {
-                View::registerPagesDir($app, $dir);
-            }
+        $pagesPath = $packageConfig['pages-path'] ?? null;
+        if ($pagesPath && is_dir($installPath . '/' . $pagesPath)) {
+            View::registerPagesDir($app, $installPath . '/' . $pagesPath);
         }
 
-        $cssPath = $pkg['css'] ?? null;
+        $cssPath = $packageConfig['css'] ?? null;
         if ($cssPath) {
             View::registerCssFile($app, $installPath . '/' . $cssPath);
         }
@@ -203,9 +197,9 @@ class App
      * Derive the app name from a package config.
      * e.g. components-prefix "cms:" -> app name "cms"
      */
-    private function appNameFromPackage(array $pkg): ?string
+    private function appNameFromPackage(array $packageConfig): ?string
     {
-        $prefix = $pkg['components-prefix'] ?? '';
+        $prefix = $packageConfig['components-prefix'] ?? '';
         if (!$prefix) {
             return null;
         }
@@ -428,14 +422,14 @@ class App
         }
     }
 
-    private function loadPackageRoutes(Router $router, array $pkg): void
+    private function loadPackageRoutes(Router $router, array $packageConfig): void
     {
-        $routeFile = $pkg['routes'] ?? null;
+        $routeFile = $packageConfig['routes'] ?? null;
         if (!$routeFile) {
             return;
         }
 
-        $routePath = $pkg['install_path'] . '/' . $routeFile;
+        $routePath = $packageConfig['install_path'] . '/' . $routeFile;
 
         $overridePath = $this->basePath . '/routes/' . basename($routeFile);
         if (file_exists($overridePath)) {
@@ -446,7 +440,7 @@ class App
             return;
         }
 
-        $app = $this->appNameFromPackage($pkg) ?? '';
+        $app = $this->appNameFromPackage($packageConfig) ?? '';
         $router->group(['prefix' => $app, 'app' => $app ?: 'frontend'], function (Router $router) use ($routePath) {
             require $routePath;
         });

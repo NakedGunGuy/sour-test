@@ -83,10 +83,6 @@ class Auth
             [$id],
         );
 
-        if (self::$cachedUser === null) {
-            self::logout();
-        }
-
         return self::$cachedUser;
     }
 
@@ -95,7 +91,7 @@ class Auth
         return password_hash($password, PASSWORD_BCRYPT);
     }
 
-    public static function isLockedOut(string $email): bool
+    private static function isLockedOut(string $email): bool
     {
         $key = self::throttleKey($email);
         $data = Session::get($key);
@@ -116,7 +112,7 @@ class Auth
         return true;
     }
 
-    public static function remainingAttempts(string $email): int
+    private static function remainingAttempts(string $email): int
     {
         $key = self::throttleKey($email);
         $data = Session::get($key);

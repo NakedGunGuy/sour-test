@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Sauerkraut\View\AppContext;
 use Sauerkraut\View\Component;
 

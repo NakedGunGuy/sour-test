@@ -11,6 +11,7 @@ use Sauerkraut\Response;
 
 class Csrf implements Middleware
 {
+    private const int TOKEN_BYTES = 32;
     public function handle(Request $request, \Closure $next): Response
     {
         if (in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
@@ -58,6 +59,6 @@ class Csrf implements Middleware
 
     private static function regenerateToken(): void
     {
-        Session::set('_csrf_token', bin2hex(random_bytes(32)));
+        Session::set('_csrf_token', bin2hex(random_bytes(self::TOKEN_BYTES)));
     }
 }

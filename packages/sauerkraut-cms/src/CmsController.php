@@ -180,7 +180,7 @@ class CmsController extends Controller
         $columns = array_keys($data);
         $values = array_values($data);
         $placeholders = implode(', ', array_fill(0, count($columns), '?'));
-        $colNames = implode(', ', array_map(fn ($c) => "\"{$c}\"", $columns));
+        $colNames = implode(', ', array_map(fn ($column) => "\"{$column}\"", $columns));
 
         $this->db->execute(
             "INSERT INTO \"{$table}\" ({$colNames}) VALUES ({$placeholders})",
@@ -493,7 +493,7 @@ class CmsController extends Controller
         $hidden = $this->app->config('cms.hidden_tables', []);
         $names = $this->inspector->tableNames();
 
-        return array_values(array_filter($names, fn ($n) => !in_array($n, $hidden)));
+        return array_values(array_filter($names, fn ($tableName) => !in_array($tableName, $hidden)));
     }
 
     protected function guardTable(string $table): void

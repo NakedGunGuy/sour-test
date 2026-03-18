@@ -188,10 +188,11 @@ class Component
         }
 
         $names = implode(',', $slugs);
-        $version = config('app.version', '1.0');
+        $cacheBuster = config('app.debug') ? '&t=' . time() : '&v=' . substr(md5($names), 0, 8);
+
         return $extension === 'css'
-            ? '    <link rel="stylesheet" href="/css/components.css?c=' . $names . '&v=' . $version . '">' . "\n"
-            : '    <script src="/js/components.js?c=' . $names . '&v=' . $version . '" defer></script>' . "\n";
+            ? '    <link rel="stylesheet" href="/css/components.css?c=' . $names . $cacheBuster . '">' . "\n"
+            : '    <script src="/js/components.js?c=' . $names . $cacheBuster . '" defer></script>' . "\n";
     }
 
     // --- Public asset API (delegates to unified helpers) ---

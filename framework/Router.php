@@ -125,11 +125,7 @@ class Router
      */
     public function match(string $method, string $path): ?array
     {
-        $path = '/' . trim($path, '/');
-
-        if ($path !== '/' && str_ends_with($path, '/')) {
-            $path = rtrim($path, '/');
-        }
+        $path = $this->normalizePath($path);
 
         foreach ($this->routes as $route) {
             $params = $route->matches($method, $path);
@@ -143,11 +139,7 @@ class Router
 
     public function hasMatchingPath(string $path): bool
     {
-        $path = '/' . trim($path, '/');
-
-        if ($path !== '/' && str_ends_with($path, '/')) {
-            $path = rtrim($path, '/');
-        }
+        $path = $this->normalizePath($path);
 
         foreach ($this->routes as $route) {
             if ($route->matchesPath($path)) {
@@ -169,5 +161,16 @@ class Router
     public function routes(): array
     {
         return $this->routes;
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $path = '/' . trim($path, '/');
+
+        if ($path !== '/' && str_ends_with($path, '/')) {
+            $path = rtrim($path, '/');
+        }
+
+        return $path;
     }
 }
