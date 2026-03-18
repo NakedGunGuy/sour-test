@@ -53,6 +53,10 @@ class Response
 
     public function withHeader(string $name, string $value): static
     {
+        if (preg_match('/[\r\n]/', $name . $value)) {
+            throw new \InvalidArgumentException('Header values must not contain newlines.');
+        }
+
         $clone = clone $this;
         $clone->headers[$name] = $value;
         return $clone;

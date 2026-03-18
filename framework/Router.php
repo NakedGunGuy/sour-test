@@ -120,11 +120,13 @@ class Router
         return 'frontend';
     }
 
+    /**
+     * @return array{Route, array}|null Matched route and params, or null
+     */
     public function match(string $method, string $path): ?array
     {
         $path = '/' . trim($path, '/');
 
-        // Normalize: remove trailing slash (except for root)
         if ($path !== '/' && str_ends_with($path, '/')) {
             $path = rtrim($path, '/');
         }
@@ -137,6 +139,23 @@ class Router
         }
 
         return null;
+    }
+
+    public function hasMatchingPath(string $path): bool
+    {
+        $path = '/' . trim($path, '/');
+
+        if ($path !== '/' && str_ends_with($path, '/')) {
+            $path = rtrim($path, '/');
+        }
+
+        foreach ($this->routes as $route) {
+            if ($route->matchesPath($path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function url(string $name, array $params = []): string

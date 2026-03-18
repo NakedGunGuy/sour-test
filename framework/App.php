@@ -36,12 +36,24 @@ class App
     public static function boot(string $basePath): static
     {
         $app = new static($basePath);
+        $app->registerErrorHandlers();
         Env::load($basePath);
         $app->bootstrapConfig();
         $app->bootstrapDatabase();
         $app->discoverPackages();
         $app->bootstrapView();
         return $app;
+    }
+
+    private function registerErrorHandlers(): void
+    {
+        set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+            if (!(error_reporting() & $severity)) {
+                return false;
+            }
+
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
     }
 
     private function bootstrapConfig(): void
@@ -289,7 +301,11 @@ class App
             $matched = $router->match($request->method(), $request->path());
 
             if ($matched === null) {
-                Response::html('<h1>404 Not Found</h1>', 404)->send();
+                if ($router->hasMatchingPath($request->path())) {
+                    Response::html('<h1>405 Method Not Allowed</h1>', 405)->send();
+                } else {
+                    Response::html('<h1>404 Not Found</h1>', 404)->send();
+                }
                 return;
             }
 

@@ -25,7 +25,10 @@ class Csrf implements Middleware
             return Response::html('<h1>419 — CSRF Token Mismatch</h1>', 419);
         }
 
-        return $next($request);
+        $response = $next($request);
+        self::regenerateToken();
+
+        return $response;
     }
 
     private function ensureToken(): void
@@ -36,9 +39,16 @@ class Csrf implements Middleware
     public static function token(): string
     {
         Session::start();
+
         if (!Session::has('_csrf_token')) {
-            Session::set('_csrf_token', bin2hex(random_bytes(32)));
+            self::regenerateToken();
         }
+
         return Session::get('_csrf_token');
+    }
+
+    private static function regenerateToken(): void
+    {
+        Session::set('_csrf_token', bin2hex(random_bytes(32)));
     }
 }

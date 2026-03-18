@@ -103,10 +103,28 @@ class Request
 
     public function json(): array
     {
-        if ($this->body && str_contains($this->header('content-type', ''), 'json')) {
-            return json_decode($this->body, true) ?? [];
+        if (!$this->body || !str_contains($this->header('content-type', ''), 'json')) {
+            return [];
         }
-        return [];
+
+        $decoded = json_decode($this->body, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return [];
+        }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    public function hasValidJson(): bool
+    {
+        if (!$this->body || !str_contains($this->header('content-type', ''), 'json')) {
+            return false;
+        }
+
+        json_decode($this->body);
+
+        return json_last_error() === JSON_ERROR_NONE;
     }
 
     public function body(): ?string

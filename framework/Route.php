@@ -54,6 +54,11 @@ class Route
         return null;
     }
 
+    public function matchesPath(string $path): bool
+    {
+        return (bool) preg_match($this->regex, $path);
+    }
+
     public function method(): string
     {
         return $this->method;
