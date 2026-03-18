@@ -92,16 +92,6 @@ function cms_css(): string
     return \Sauerkraut\View\View::appCss('cms');
 }
 
-function cache(): \Sauerkraut\Cache\Cache
-{
-    return App::getInstance()->cache();
-}
-
-function logger(): \Sauerkraut\Log\Logger
-{
-    return App::getInstance()->logger();
-}
-
 function env(string $key, ?string $default = null): ?string
 {
     return \Sauerkraut\Config\Env::get($key, $default);

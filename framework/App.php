@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Sauerkraut;
 
-use Sauerkraut\Cache\Cache;
 use Sauerkraut\Config\Config;
 use Sauerkraut\Config\Env;
 use Sauerkraut\Database\Connection;
-use Sauerkraut\Log\Logger;
 use Sauerkraut\Database\MigrationRepository;
 use Sauerkraut\Database\Migrator;
 use Sauerkraut\Database\Schema\Inspector;
@@ -63,8 +61,6 @@ class App
     private function bootstrapConfig(): void
     {
         $this->singleton(Config::class, fn () => new Config($this->basePath . '/config'));
-        $this->singleton(Cache::class, fn () => new Cache($this->basePath . '/storage/cache'));
-        $this->singleton(Logger::class, fn () => new Logger($this->basePath . '/storage/logs'));
     }
 
     private function bootstrapDatabase(): void
@@ -291,16 +287,6 @@ class App
         $db = $this->db();
 
         return new Migrator($db, new MigrationRepository($db), $this->basePath('database/migrations'));
-    }
-
-    public function cache(): Cache
-    {
-        return $this->make(Cache::class);
-    }
-
-    public function logger(): Logger
-    {
-        return $this->make(Logger::class);
     }
 
     public function basePath(string $path = ''): string
