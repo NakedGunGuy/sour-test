@@ -92,6 +92,11 @@ function cms_css(): string
     return \Sauerkraut\View\View::appCss('cms');
 }
 
+function env(string $key, ?string $default = null): ?string
+{
+    return \Sauerkraut\Config\Env::get($key, $default);
+}
+
 function auth(): ?array
 {
     return \Sauerkraut\Auth\Auth::user(db());

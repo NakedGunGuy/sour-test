@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Sauerkraut;
 
 use Sauerkraut\Config\Config;
+use Sauerkraut\Config\Env;
 use Sauerkraut\Database\Connection;
 use Sauerkraut\Database\Schema\Inspector;
 use Sauerkraut\View\Component;
@@ -35,6 +36,7 @@ class App
     public static function boot(string $basePath): static
     {
         $app = new static($basePath);
+        Env::load($basePath);
         $app->bootstrapConfig();
         $app->bootstrapDatabase();
         $app->discoverPackages();

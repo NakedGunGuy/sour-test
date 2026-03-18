@@ -7,6 +7,9 @@ namespace Sauerkraut\Console;
 use Sauerkraut\App;
 use Sauerkraut\Console\Commands\HelpCommand;
 use Sauerkraut\Console\Commands\PublishCommand;
+use Sauerkraut\Console\Commands\EnvDecryptCommand;
+use Sauerkraut\Console\Commands\EnvEncryptCommand;
+use Sauerkraut\Console\Commands\EnvKeyCommand;
 use Sauerkraut\Console\Commands\MakeMigrationCommand;
 use Sauerkraut\Console\Commands\MigrateCommand;
 use Sauerkraut\Console\Commands\MigrateRollbackCommand;
@@ -65,6 +68,9 @@ class ConsoleApplication
         $this->register(new MigrateRollbackCommand());
         $this->register(new MigrateStatusCommand());
         $this->register(new MakeMigrationCommand());
+        $this->register(new EnvKeyCommand());
+        $this->register(new EnvEncryptCommand());
+        $this->register(new EnvDecryptCommand());
 
         $help->setCommands($this->commands);
         $scheduleRun->setCommands($this->commands);

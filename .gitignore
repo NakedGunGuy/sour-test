@@ -4,3 +4,5 @@
 *.tmp.*
 /storage/database.sqlite
 /.idea/
+.env
+.env.key
