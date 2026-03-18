@@ -1,0 +1,38 @@
+@layer components {
+    .avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+        background: var(--primary, #3b82f6);
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .avatar-sm {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.75rem;
+    }
+
+    .avatar-lg {
+        width: 3.5rem;
+        height: 3.5rem;
+        font-size: 1.125rem;
+    }
+
+    .avatar-xl {
+        width: 5rem;
+        height: 5rem;
+        font-size: 1.5rem;
+    }
+
+    img.avatar {
+        background: light-dark(var(--surface-2, #f3f4f6), var(--surface-2, #2d2d44));
+    }
+}

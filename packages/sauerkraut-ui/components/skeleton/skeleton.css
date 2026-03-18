@@ -1,0 +1,48 @@
+@layer components {
+    .skeleton {
+        background: light-dark(#e5e7eb, #2d2d44);
+        border-radius: var(--radius-md, 0.5rem);
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    .skeleton-text {
+        height: 1rem;
+        width: 100%;
+        margin-bottom: var(--space-sm, 0.5rem);
+    }
+
+    .skeleton-text:last-child {
+        width: 75%;
+    }
+
+    .skeleton-heading {
+        height: 1.5rem;
+        width: 40%;
+        margin-bottom: var(--space-md, 1rem);
+    }
+
+    .skeleton-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 9999px;
+    }
+
+    .skeleton-card {
+        height: 12rem;
+        width: 100%;
+    }
+
+    .skeleton-image {
+        height: 10rem;
+        width: 100%;
+    }
+
+    @keyframes skeleton-pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.4;
+        }
+    }
+}

@@ -1,0 +1,30 @@
+@layer components {
+    .breadcrumb-list {
+        display: flex;
+        align-items: center;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        gap: 0;
+        font-size: 0.875rem;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: '/';
+        padding: 0 var(--space-sm, 0.5rem);
+        color: var(--text-2, #6b7280);
+    }
+
+    .breadcrumb-link {
+        color: var(--primary, #3b82f6);
+        text-decoration: none;
+    }
+
+    .breadcrumb-link:hover {
+        text-decoration: underline;
+    }
+
+    .breadcrumb-active {
+        color: var(--text-2, #6b7280);
+    }
+}
