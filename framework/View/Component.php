@@ -188,9 +188,10 @@ class Component
         }
 
         $names = implode(',', $slugs);
+        $version = config('app.version', '1.0');
         return $extension === 'css'
-            ? '    <link rel="stylesheet" href="/css/components.css?c=' . $names . '">' . "\n"
-            : '    <script src="/js/components.js?c=' . $names . '" defer></script>' . "\n";
+            ? '    <link rel="stylesheet" href="/css/components.css?c=' . $names . '&v=' . $version . '">' . "\n"
+            : '    <script src="/js/components.js?c=' . $names . '&v=' . $version . '" defer></script>' . "\n";
     }
 
     // --- Public asset API (delegates to unified helpers) ---

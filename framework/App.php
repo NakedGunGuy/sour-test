@@ -54,6 +54,18 @@ class App
     private function bootstrapConfig(): void
     {
         $this->singleton(Config::class, fn () => new Config($this->basePath . '/config'));
+        $this->validateConfig();
+    }
+
+    private function validateConfig(): void
+    {
+        $required = ['database.default', 'database.connections'];
+
+        foreach ($required as $key) {
+            if ($this->config($key) === null) {
+                throw new \RuntimeException("Missing required config: {$key}");
+            }
+        }
     }
 
     private function bootstrapDatabase(): void
@@ -308,11 +320,8 @@ class App
             $matched = $router->match($request->method(), $request->path());
 
             if ($matched === null) {
-                if ($router->hasMatchingPath($request->path())) {
-                    Response::html('<h1>405 Method Not Allowed</h1>', 405)->send();
-                } else {
-                    Response::html('<h1>404 Not Found</h1>', 404)->send();
-                }
+                $status = $router->hasMatchingPath($request->path()) ? 405 : 404;
+                $this->sendErrorPage($status)->send();
                 return;
             }
 
@@ -337,18 +346,51 @@ class App
     {
         $this->logException($e);
 
-        if (!$this->config('app.debug', false)) {
-            Response::html('<h1>500 Internal Server Error</h1>', 500)->send();
+        if ($this->config('app.debug', false)) {
+            $message = htmlspecialchars($e->getMessage());
+            $file = htmlspecialchars($e->getFile() . ':' . $e->getLine());
+            $trace = htmlspecialchars($e->getTraceAsString());
+            Response::html(
+                "<h1>500 — {$message}</h1><p>{$file}</p><pre>{$trace}</pre>",
+                500,
+            )->send();
             return;
         }
 
-        $message = htmlspecialchars($e->getMessage());
-        $file = htmlspecialchars($e->getFile() . ':' . $e->getLine());
-        $trace = htmlspecialchars($e->getTraceAsString());
-        Response::html(
-            "<h1>500 — {$message}</h1><p>{$file}</p><pre>{$trace}</pre>",
-            500,
-        )->send();
+        $this->sendErrorPage(500)->send();
+    }
+
+    private function sendErrorPage(int $status): Response
+    {
+        $errorPage = $this->basePath . "/resources/errors/{$status}.php";
+
+        if (file_exists($errorPage)) {
+            ob_start();
+            require $errorPage;
+            return Response::html(ob_get_clean(), $status);
+        }
+
+        $titles = [
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            405 => 'Method Not Allowed',
+            419 => 'Page Expired',
+            429 => 'Too Many Requests',
+            500 => 'Internal Server Error',
+            503 => 'Service Unavailable',
+        ];
+
+        $title = $titles[$status] ?? 'Error';
+
+        return Response::html(
+            "<!DOCTYPE html><html><head><title>{$status} {$title}</title>"
+            . '<style>body{font-family:system-ui,sans-serif;display:flex;justify-content:center;align-items:center;'
+            . 'min-height:100vh;margin:0;background:#f9fafb;color:#111}div{text-align:center}'
+            . "h1{font-size:4rem;margin:0;opacity:.3}{$status}</h1>"
+            . 'p{font-size:1.25rem;margin:.5rem 0;opacity:.6}</style></head>'
+            . "<body><div><h1>{$status}</h1><p>{$title}</p></div></body></html>",
+            $status,
+        );
     }
 
     private function logException(\Throwable $e): void
