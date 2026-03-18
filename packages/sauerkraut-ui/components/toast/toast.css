@@ -1,0 +1,84 @@
+@layer components {
+    .toast-container {
+        position: fixed;
+        top: var(--space-md, 1rem);
+        right: var(--space-md, 1rem);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm, 0.5rem);
+        max-width: 24rem;
+    }
+
+    .toast {
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm, 0.5rem);
+        padding: var(--space-sm, 0.5rem) var(--space-md, 1rem);
+        border-radius: var(--radius-md, 0.5rem);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        animation: toast-in 0.3s ease-out;
+        font-size: 0.875rem;
+    }
+
+    .toast-info {
+        background: light-dark(#eff6ff, #1e3a5f);
+        color: light-dark(#1e40af, #93c5fd);
+        border: 1px solid light-dark(#bfdbfe, #1e3a5f);
+    }
+
+    .toast-success {
+        background: light-dark(#f0fdf4, #14532d);
+        color: light-dark(#166534, #86efac);
+        border: 1px solid light-dark(#bbf7d0, #14532d);
+    }
+
+    .toast-error {
+        background: light-dark(#fef2f2, #450a0a);
+        color: light-dark(#991b1b, #fca5a5);
+        border: 1px solid light-dark(#fecaca, #450a0a);
+    }
+
+    .toast-warning {
+        background: light-dark(#fffbeb, #451a03);
+        color: light-dark(#92400e, #fcd34d);
+        border: 1px solid light-dark(#fde68a, #451a03);
+    }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-dismiss {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        opacity: 0.6;
+        color: inherit;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .toast-dismiss:hover {
+        opacity: 1;
+    }
+
+    @keyframes toast-in {
+        from {
+            opacity: 0;
+            transform: translateX(1rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes toast-out {
+        to {
+            opacity: 0;
+            transform: translateX(1rem);
+        }
+    }
+}

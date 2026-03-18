@@ -1,0 +1,33 @@
+@layer components {
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        border-radius: 9999px;
+        background: light-dark(var(--surface-2, #f3f4f6), var(--surface-2, #2d2d44));
+        color: var(--text-1, #374151);
+    }
+
+    .badge-primary {
+        background: var(--primary, #3b82f6);
+        color: #fff;
+    }
+
+    .badge-success {
+        background: light-dark(#dcfce7, #166534);
+        color: light-dark(#166534, #dcfce7);
+    }
+
+    .badge-danger {
+        background: light-dark(#fee2e2, #991b1b);
+        color: light-dark(#991b1b, #fee2e2);
+    }
+
+    .badge-warning {
+        background: light-dark(#fef3c7, #92400e);
+        color: light-dark(#92400e, #fef3c7);
+    }
+}
