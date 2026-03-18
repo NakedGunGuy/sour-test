@@ -6,6 +6,8 @@ namespace Sauerkraut\Http;
 
 class UploadedFile
 {
+    private const int DIRECTORY_PERMISSIONS = 0755;
+    private const int RANDOM_FILENAME_BYTES = 16;
     private const array DANGEROUS_EXTENSIONS = [
         'php', 'phtml', 'phar', 'php3', 'php4', 'php5',
         'exe', 'bat', 'cmd', 'sh', 'cgi',
@@ -74,7 +76,7 @@ class UploadedFile
         }
 
         if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
+            mkdir($directory, self::DIRECTORY_PERMISSIONS, true);
         }
 
         $filename ??= $this->generateFilename();
@@ -89,6 +91,6 @@ class UploadedFile
 
     private function generateFilename(): string
     {
-        return bin2hex(random_bytes(16)) . '.' . $this->extension();
+        return bin2hex(random_bytes(self::RANDOM_FILENAME_BYTES)) . '.' . $this->extension();
     }
 }

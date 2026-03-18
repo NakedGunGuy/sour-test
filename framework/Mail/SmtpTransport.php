@@ -7,6 +7,11 @@ namespace Sauerkraut\Mail;
 class SmtpTransport implements Transport
 {
     private const int DEFAULT_TIMEOUT = 30;
+    private const int DEFAULT_PORT = 587;
+    private const int SMTP_CODE_LENGTH = 3;
+    private const int SMTP_ERROR_THRESHOLD = 400;
+    private const int READ_BUFFER_SIZE = 512;
+    private const int RANDOM_BOUNDARY_BYTES = 16;
     private const string CRLF = "\r\n";
 
     /** @var resource|null */
@@ -24,7 +29,7 @@ class SmtpTransport implements Transport
     {
         return new self(
             $config['host'] ?? 'localhost',
-            $config['port'] ?? 587,
+            $config['port'] ?? self::DEFAULT_PORT,
             $config['username'] ?? null,
             $config['password'] ?? null,
             $config['encryption'] ?? '',
@@ -144,7 +149,7 @@ class SmtpTransport implements Transport
 
     private function buildMultipartMessage(Envelope $envelope, array $headers): string
     {
-        $boundary = bin2hex(random_bytes(16));
+        $boundary = bin2hex(random_bytes(self::RANDOM_BOUNDARY_BYTES));
         $headers[] = "Content-Type: multipart/mixed; boundary=\"{$boundary}\"";
 
         $parts = [];
@@ -179,17 +184,17 @@ class SmtpTransport implements Transport
     {
         $response = '';
 
-        while ($line = fgets($this->socket, 512)) {
+        while ($line = fgets($this->socket, self::READ_BUFFER_SIZE)) {
             $response .= $line;
 
-            if (isset($line[3]) && $line[3] === ' ') {
+            if (isset($line[self::SMTP_CODE_LENGTH]) && $line[self::SMTP_CODE_LENGTH] === ' ') {
                 break;
             }
         }
 
-        $code = (int) substr($response, 0, 3);
+        $code = (int) substr($response, 0, self::SMTP_CODE_LENGTH);
 
-        if ($code >= 400) {
+        if ($code >= self::SMTP_ERROR_THRESHOLD) {
             throw new \RuntimeException("SMTP error ({$code}): {$response}");
         }
 

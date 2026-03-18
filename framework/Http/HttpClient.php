@@ -7,6 +7,7 @@ namespace Sauerkraut\Http;
 class HttpClient
 {
     private const int DEFAULT_TIMEOUT = 30;
+    private const int MAX_REDIRECTS = 5;
 
     private array $defaultHeaders = [];
     private int $timeout;
@@ -38,60 +39,60 @@ class HttpClient
             $url .= '?' . http_build_query($query);
         }
 
-        return $this->send('GET', $url);
+        return $this->send(new HttpRequest('GET', $url));
     }
 
     public function post(string $url, array $data = []): HttpResponse
     {
-        return $this->send('POST', $url, json_encode($data), [
+        return $this->send(new HttpRequest('POST', $url, json_encode($data), [
             'Content-Type' => 'application/json',
-        ]);
+        ]));
     }
 
     public function put(string $url, array $data = []): HttpResponse
     {
-        return $this->send('PUT', $url, json_encode($data), [
+        return $this->send(new HttpRequest('PUT', $url, json_encode($data), [
             'Content-Type' => 'application/json',
-        ]);
+        ]));
     }
 
     public function patch(string $url, array $data = []): HttpResponse
     {
-        return $this->send('PATCH', $url, json_encode($data), [
+        return $this->send(new HttpRequest('PATCH', $url, json_encode($data), [
             'Content-Type' => 'application/json',
-        ]);
+        ]));
     }
 
     public function delete(string $url): HttpResponse
     {
-        return $this->send('DELETE', $url);
+        return $this->send(new HttpRequest('DELETE', $url));
     }
 
     public function postForm(string $url, array $data): HttpResponse
     {
-        return $this->send('POST', $url, http_build_query($data), [
+        return $this->send(new HttpRequest('POST', $url, http_build_query($data), [
             'Content-Type' => 'application/x-www-form-urlencoded',
-        ]);
+        ]));
     }
 
-    private function send(string $method, string $url, ?string $body = null, array $headers = []): HttpResponse
+    public function send(HttpRequest $request): HttpResponse
     {
         $curl = curl_init();
-        $mergedHeaders = array_merge($this->defaultHeaders, $headers);
+        $mergedHeaders = array_merge($this->defaultHeaders, $request->headers);
 
         curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
+            CURLOPT_URL => $request->url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $this->timeout,
-            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_CUSTOMREQUEST => $request->method,
             CURLOPT_HTTPHEADER => $this->formatHeaders($mergedHeaders),
             CURLOPT_HEADER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_MAXREDIRS => self::MAX_REDIRECTS,
         ]);
 
-        if ($body !== null) {
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $body);
+        if ($request->body !== null) {
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $request->body);
         }
 
         $response = curl_exec($curl);

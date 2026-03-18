@@ -6,6 +6,11 @@ namespace Sauerkraut\Http;
 
 readonly class HttpResponse
 {
+    private const int STATUS_OK_MIN = 200;
+    private const int STATUS_REDIRECT_MIN = 300;
+    private const int STATUS_CLIENT_ERROR_MIN = 400;
+    private const int STATUS_SERVER_ERROR_MIN = 500;
+
     public function __construct(
         private int $status,
         private string $body,
@@ -47,21 +52,21 @@ readonly class HttpResponse
 
     public function isOk(): bool
     {
-        return $this->status >= 200 && $this->status < 300;
+        return $this->status >= self::STATUS_OK_MIN && $this->status < self::STATUS_REDIRECT_MIN;
     }
 
     public function isRedirect(): bool
     {
-        return $this->status >= 300 && $this->status < 400;
+        return $this->status >= self::STATUS_REDIRECT_MIN && $this->status < self::STATUS_CLIENT_ERROR_MIN;
     }
 
     public function isClientError(): bool
     {
-        return $this->status >= 400 && $this->status < 500;
+        return $this->status >= self::STATUS_CLIENT_ERROR_MIN && $this->status < self::STATUS_SERVER_ERROR_MIN;
     }
 
     public function isServerError(): bool
     {
-        return $this->status >= 500;
+        return $this->status >= self::STATUS_SERVER_ERROR_MIN;
     }
 }
