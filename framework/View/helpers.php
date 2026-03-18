@@ -91,3 +91,18 @@ function cms_css(): string
 {
     return \Sauerkraut\View\View::appCss('cms');
 }
+
+function auth(): ?array
+{
+    return \Sauerkraut\Auth\Auth::user(db());
+}
+
+function auth_check(): bool
+{
+    return \Sauerkraut\Auth\Auth::check();
+}
+
+function auth_id(): ?int
+{
+    return \Sauerkraut\Auth\Auth::id();
+}
