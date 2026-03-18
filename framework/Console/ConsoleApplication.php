@@ -16,6 +16,7 @@ use Sauerkraut\Console\Commands\MigrateRollbackCommand;
 use Sauerkraut\Console\Commands\MigrateStatusCommand;
 use Sauerkraut\Console\Commands\RoutesListCommand;
 use Sauerkraut\Console\Commands\ScheduleListCommand;
+use Sauerkraut\Console\Commands\TestCommand;
 use Sauerkraut\Console\Commands\ScheduleRunCommand;
 
 class ConsoleApplication
@@ -73,6 +74,7 @@ class ConsoleApplication
         $this->register(new EnvEncryptCommand());
         $this->register(new EnvDecryptCommand());
         $this->register(new RoutesListCommand());
+        $this->register(new TestCommand());
 
         $help->setCommands($this->commands);
         $scheduleRun->setCommands($this->commands);
